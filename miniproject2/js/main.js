@@ -102,7 +102,9 @@ class BezierCurve {
 class BezierApp {
     constructor(doc) {
         this.canvas = doc.getElementById('canvas');
-        this.ctx = this.canvas.getContext('2d');
+        this.context2d = this.canvas.getContext('2d');
+        this.canvasBuffer = doc.getElementById('canvasBuffer');
+        this.context2dBuffer = this.canvasBuffer.getContext('2d');
         this.updateButton = doc.getElementById('Update');
         this.createButton = doc.getElementById('CreateCurve');
         this.deleteButton = doc.getElementById('DeleteCurve');
@@ -196,72 +198,72 @@ class BezierApp {
         this.draw_controlPoints = this.controlPointsCheckbox.checked;
         this.draw_poligonalControlPoints = this.poligonalsCheckbox.checked;
     }
-    drawCurve(curve) {
+    drawCurve(ctx,curve) {
         if (curve == null) return;
         if (curve.points == null) return;
-        this.ctx.strokeStyle = '#000';
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.moveTo(curve.points[0].x,curve.points[0].y);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(curve.points[0].x,curve.points[0].y);
         for (var i = 1; i < curve.points.length; ++i) {
-            this.ctx.lineTo(curve.points[i].x,curve.points[i].y);
+            ctx.lineTo(curve.points[i].x,curve.points[i].y);
         }
-        this.ctx.stroke();
+        ctx.stroke();
     }
-    drawCurves() {
+    drawCurves(ctx) {
         for (var i = 0; i < this.curves.length; ++i) {
-            this.drawCurve(this.curves[i]);
+            this.drawCurve(ctx,this.curves[i]);
         }
-        this.drawCurrentCurve();
     }
-    drawPoligonalControlPoints(curve) {
+    drawPoligonalControlPoints(ctx,curve) {
         if (curve == null) return;
         if (curve.controlPoints == null) return;
-        this.ctx.strokeStyle = '#0C0';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.moveTo(curve.controlPoints[0].x,curve.controlPoints[0].y);
+        ctx.strokeStyle = '#0C0';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(curve.controlPoints[0].x,curve.controlPoints[0].y);
         for (var i = 1; i < curve.controlPoints.length; ++i) {
-            this.ctx.lineTo(curve.controlPoints[i].x,curve.controlPoints[i].y);
+            ctx.lineTo(curve.controlPoints[i].x,curve.controlPoints[i].y);
         }
-        this.ctx.stroke();
+        ctx.stroke();
     }
-    drawControlPointsForCurve(curve) {
+    drawControlPointsForCurve(ctx,curve) {
         if (curve == null) return;
         if (curve.controlPoints == null) return;
-        this.ctx.strokeStyle = '#0C0';
-        this.ctx.lineWidth = 1;
-        this.ctx.fillStyle = '#0C0';
+        ctx.strokeStyle = '#0C0';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#0C0';
         for (var i = 0; i < curve.controlPoints.length; ++i) {
-            this.ctx.beginPath();
-            this.ctx.arc(curve.controlPoints[i].x,curve.controlPoints[i].y, this.controlPointRadius, 0, this.TWOPI);
-            this.ctx.stroke();
-            this.ctx.fill();
+            ctx.beginPath();
+            ctx.arc(curve.controlPoints[i].x,curve.controlPoints[i].y, this.controlPointRadius, 0, this.TWOPI);
+            ctx.stroke();
+            ctx.fill();
         }
     }
-    drawPoligonals(curve) {
+    drawPoligonals(ctx) {
         for (var i = 0; i < this.curves.length; ++i) {
-            this.drawPoligonalControlPoints(this.curves[i]);
+            this.drawPoligonalControlPoints(ctx,this.curves[i]);
         }
     }
-    drawControlPoints(curve) {
+    drawControlPoints(ctx) {
         for (var i = 0; i < this.curves.length; ++i) {
-            this.drawControlPointsForCurve(this.curves[i]);
+            this.drawControlPointsForCurve(ctx,this.curves[i]);
         }
     }
-    drawCurrentCurve() {
-        this.drawCurve(this.currentCurve);
+    drawCurrentCurve(ctx) {
+        this.drawCurve(ctx,this.currentCurve);
     }
-    draw() {
-        this.ctx.strokeStyle = '#000';
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.moveTo(500,500);
-        this.ctx.lineTo(600,600);
-        this.ctx.stroke();
+    draw(ctx) {
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(500,500);
+        ctx.lineTo(600,600);
+        ctx.stroke();
     }
     clear() {
-        this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+        this.context2d.clearRect(0,0,this.canvas.width,this.canvas.height);
+        this.context2dBuffer.clearRect(0,0,this.canvas.width,this.canvas.height);
     }
     run() {
         var stop = false;
@@ -277,10 +279,17 @@ class BezierApp {
                 break;
             case "updateAll":
                 this.clear();
-                if (this.draw_curve) this.drawCurves();
-                if (this.draw_controlPoints) this.drawControlPoints();
-                if (this.draw_poligonalControlPoints) this.drawPoligonals();
-                this.draw();
+                if (this.draw_curve) this.drawCurves(this.context2dBuffer);
+                if (this.draw_controlPoints) this.drawControlPoints(this.context2dBuffer);
+                if (this.draw_poligonalControlPoints) this.drawPoligonals(this.context2dBuffer);
+                this.draw(this.context2dBuffer);
+                //this.context2dBuffer.drawImage(this.canvas, 0, 0);
+                //this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+                this.state = "nothing";
+                break;
+            case "updateCurrent":
+                this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+                if (this.draw_curve) this.drawCurrentCurve(this.context2d);
                 this.state = "nothing";
                 break;
             default:
@@ -296,6 +305,8 @@ class BezierApp {
     resize() {
         this.canvas.width = document.body.clientWidth;
         this.canvas.height = document.body.clientHeight;
+        this.canvasBuffer.width = document.body.clientWidth;
+        this.canvasBuffer.height = document.body.clientHeight;
     }
 }
 var app = new BezierApp(document);
