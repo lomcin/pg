@@ -37,7 +37,7 @@ div.canvas {
 }
 
 div.menu {
-    width:100px;
+    width:120px;
 }
 button {
     border: 1px solid transparent;
@@ -58,4 +58,9 @@ button.active {
     background-color: lightskyblue;
     border: 1px solid blue;
     font-weight: bold;
+}
+/* div > input[type=checkbox] { */
+div.checkbox {
+    width: 100%;
+    display: block;
 }

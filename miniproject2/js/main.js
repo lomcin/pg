@@ -48,9 +48,6 @@ class DeCasteljau {
     }
     static calcPoints(controlPoints, tvalues) {
         var points = new Array();
-        console.log('calcPoints');
-        console.log(tvalues);
-        console.log(controlPoints);
         for (var i = 0; i < tvalues.length; ++i) {
             points.push(DeCasteljau.process(controlPoints, tvalues[i])[0]);
         }
@@ -85,7 +82,6 @@ class BezierCurve {
         this._updated = false;
     }
     get points() {
-        console.log('points');
         if (this._points == null || this._updated == false) {
             if (this.tvalues != null) {
                 this._points = DeCasteljau.calcPoints(this.controlPoints,this.tvalues);
@@ -110,22 +106,24 @@ class BezierApp {
         this.updateButton = doc.getElementById('Update');
         this.createButton = doc.getElementById('CreateCurve');
         this.deleteButton = doc.getElementById('DeleteCurve');
+        
         this.curveList = doc.getElementById('CurveList');
+
+        this.curveCheckbox = doc.getElementById('CurveCheckbox');
+        this.poligonalsCheckbox = doc.getElementById('PoligonalsCheckbox');
+        this.controlPointsCheckbox = doc.getElementById('ControlPointsCheckbox');
+
         this.currentCurve = null;
+        this.draw_controlPoints = true;
+        this.draw_poligonalControlPoints = true;
+        this.draw_curve = true;
         this.curves = new Array();
         this.mouse = new Point(-1,-1);
         this.state = "nothing";
+        this.TWOPI = 2 * Math.PI;
+        this.controlPointRadius = 4;
         doc.body.app = this;
         doc.body.onresize = function (e) {
-            // this.app.resize();
-            // this.app.state = "updateAll";
-            // this.app.run();
-            // setTimeout(()=>{
-            //     if (this.app.state == "resize") {
-            //         this.app.state = "updateAll";
-            //         this.app.run();
-            //     }
-            // },1000);
         };
         doc.body.onload = function (e) {
             this.app.resize();
@@ -137,6 +135,7 @@ class BezierApp {
             this.app.mouse.y = e.clientY;
         };
         this.prepareButtons();
+        this.prepareCheckboxes();
     }
     prepareCreateButton() {
         this.createButton.parent = this;
@@ -165,16 +164,44 @@ class BezierApp {
         this.prepareCreateButton();
         this.prepareUpdateButton();
     }
+    prepareCurveCheckbox() {
+        this.curveCheckbox.parent = this;
+        this.curveCheckbox.onchange = function (e) {
+            this.parent.draw_curve = this.checked;
+            this.parent.state = "updateAll";
+            this.parent.run();
+        }
+    }
+    preparePoligonalsCheckbox() {
+        this.poligonalsCheckbox.parent = this;
+        this.poligonalsCheckbox.onchange = function (e) {
+            this.parent.draw_poligonalControlPoints = this.checked;
+            this.parent.state = "updateAll";
+            this.parent.run();
+        }
+    }
+    prepareControlPointsCheckbox() {
+        this.controlPointsCheckbox.parent = this;
+        this.controlPointsCheckbox.onchange = function (e) {
+            this.parent.draw_controlPoints = this.checked;
+            this.parent.state = "updateAll";
+            this.parent.run();
+        }
+    }
+    prepareCheckboxes() {
+        this.prepareCurveCheckbox();
+        this.preparePoligonalsCheckbox();
+        this.prepareControlPointsCheckbox();
+        this.draw_curve = this.curveCheckbox.checked;
+        this.draw_controlPoints = this.controlPointsCheckbox.checked;
+        this.draw_poligonalControlPoints = this.poligonalsCheckbox.checked;
+    }
     drawCurve(curve) {
         if (curve == null) return;
         if (curve.points == null) return;
-        console.log('draw curve');
-        console.log(curve.points[0]);
         this.ctx.strokeStyle = '#000';
         this.ctx.lineWidth = 2;
         this.ctx.beginPath();
-        console.log('curve');
-        console.log(curve);
         this.ctx.moveTo(curve.points[0].x,curve.points[0].y);
         for (var i = 1; i < curve.points.length; ++i) {
             this.ctx.lineTo(curve.points[i].x,curve.points[i].y);
@@ -186,6 +213,41 @@ class BezierApp {
             this.drawCurve(this.curves[i]);
         }
         this.drawCurrentCurve();
+    }
+    drawPoligonalControlPoints(curve) {
+        if (curve == null) return;
+        if (curve.controlPoints == null) return;
+        this.ctx.strokeStyle = '#0C0';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(curve.controlPoints[0].x,curve.controlPoints[0].y);
+        for (var i = 1; i < curve.controlPoints.length; ++i) {
+            this.ctx.lineTo(curve.controlPoints[i].x,curve.controlPoints[i].y);
+        }
+        this.ctx.stroke();
+    }
+    drawControlPointsForCurve(curve) {
+        if (curve == null) return;
+        if (curve.controlPoints == null) return;
+        this.ctx.strokeStyle = '#0C0';
+        this.ctx.lineWidth = 1;
+        this.ctx.fillStyle = '#0C0';
+        for (var i = 0; i < curve.controlPoints.length; ++i) {
+            this.ctx.beginPath();
+            this.ctx.arc(curve.controlPoints[i].x,curve.controlPoints[i].y, this.controlPointRadius, 0, this.TWOPI);
+            this.ctx.stroke();
+            this.ctx.fill();
+        }
+    }
+    drawPoligonals(curve) {
+        for (var i = 0; i < this.curves.length; ++i) {
+            this.drawPoligonalControlPoints(this.curves[i]);
+        }
+    }
+    drawControlPoints(curve) {
+        for (var i = 0; i < this.curves.length; ++i) {
+            this.drawControlPointsForCurve(this.curves[i]);
+        }
     }
     drawCurrentCurve() {
         this.drawCurve(this.currentCurve);
@@ -215,7 +277,9 @@ class BezierApp {
                 break;
             case "updateAll":
                 this.clear();
-                this.drawCurves();
+                if (this.draw_curve) this.drawCurves();
+                if (this.draw_controlPoints) this.drawControlPoints();
+                if (this.draw_poligonalControlPoints) this.drawPoligonals();
                 this.draw();
                 this.state = "nothing";
                 break;
@@ -230,10 +294,8 @@ class BezierApp {
         }
     }
     resize() {
-        console.log('resize')
         this.canvas.width = document.body.clientWidth;
         this.canvas.height = document.body.clientHeight;
-        console.log(this.canvas.width + ", " + this.canvas.height);
     }
 }
 var app = new BezierApp(document);
