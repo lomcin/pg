@@ -48,16 +48,19 @@ class DeCasteljau {
     }
     static calcPoints(controlPoints, tvalues) {
         var points = new Array();
+        console.log('calcPoints');
+        console.log(tvalues);
+        console.log(controlPoints);
         for (var i = 0; i < tvalues.length; ++i) {
-            points += DeCasteljau.process(controlPoints, tvalues[i]);
+            points.push(DeCasteljau.process(controlPoints, tvalues[i])[0]);
         }
         return points;
     }
 }
 
 class BezierCurve {
-    constructor(controlPoints = null, tvalues = 2) {
-        this.controlPoints = null;
+    constructor(controlPoints = null) {
+        this.controlPoints = controlPoints;
         this._tvalues = null;
         this._points = null;
         this._updated = false;
@@ -72,8 +75,9 @@ class BezierCurve {
         }
         this._tvalues = new Array();
         for (var i = 0; i < val; ++i) {
-            this._tvalues.push(i/(val+1));
+            this._tvalues.push(i/(val-1));
         }
+        this._updated = false;
     }
     append(point) {
         if (this.controlPoints == null) this.controlPoints = new Array();
@@ -81,12 +85,14 @@ class BezierCurve {
         this._updated = false;
     }
     get points() {
+        console.log('points');
         if (this._points == null || this._updated == false) {
-            if (this._tvalues != null) {
-                this._points = DeCasteljau.calcPoints(this.controlPoints,this._tvalues);
+            if (this.tvalues != null) {
+                this._points = DeCasteljau.calcPoints(this.controlPoints,this.tvalues);
                 this._updated = true;
             } else {
                 console.warn("tvalues must be defined.");
+                return null;
             }
         }
         return this._points;
@@ -107,21 +113,34 @@ class BezierApp {
         this.curveList = doc.getElementById('CurveList');
         this.currentCurve = null;
         this.curves = new Array();
+        this.mouse = new Point(-1,-1);
         this.state = "nothing";
         doc.body.app = this;
         doc.body.onresize = function (e) {
-            this.app.resize();
+            // this.app.resize();
+            // this.app.state = "updateAll";
+            // this.app.run();
+            // setTimeout(()=>{
+            //     if (this.app.state == "resize") {
+            //         this.app.state = "updateAll";
+            //         this.app.run();
+            //     }
+            // },1000);
         };
         doc.body.onload = function (e) {
             this.app.resize();
+            this.app.state = "updateAll";
+            this.app.run();
+        };
+        doc.body.onmousemove = function (e) {
+            this.app.mouse.x = e.clientX;
+            this.app.mouse.y = e.clientY;
         };
         this.prepareButtons();
     }
     prepareCreateButton() {
         this.createButton.parent = this;
         this.createButton.onclick = function (e) {
-            console.log(this.parent);
-            console.log(this);
             if (this.parent.state == 'newCurve') {
                 this.parent.state = 'nothing';
                 this.classList.remove('active');
@@ -138,8 +157,8 @@ class BezierApp {
     prepareUpdateButton() {
         this.updateButton.parent = this;
         this.updateButton.onclick = function (e) {
+            this.parent.state = "updateAll";
             this.parent.run();
-            console.log('run');
         }
     }
     prepareButtons() {
@@ -149,14 +168,18 @@ class BezierApp {
     drawCurve(curve) {
         if (curve == null) return;
         if (curve.points == null) return;
-
+        console.log('draw curve');
+        console.log(curve.points[0]);
+        this.ctx.strokeStyle = '#000';
         this.ctx.lineWidth = 2;
         this.ctx.beginPath();
+        console.log('curve');
+        console.log(curve);
         this.ctx.moveTo(curve.points[0].x,curve.points[0].y);
         for (var i = 1; i < curve.points.length; ++i) {
             this.ctx.lineTo(curve.points[i].x,curve.points[i].y);
         }
-        this.ctx.closePath();
+        this.ctx.stroke();
     }
     drawCurves() {
         for (var i = 0; i < this.curves.length; ++i) {
@@ -173,30 +196,44 @@ class BezierApp {
         this.ctx.beginPath();
         this.ctx.moveTo(500,500);
         this.ctx.lineTo(600,600);
-        this.ctx.closePath();
         this.ctx.stroke();
     }
+    clear() {
+        this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+    }
     run() {
+        var stop = false;
+        console.log('run: ' + this.state);
         switch(this.state) {
             case "newCurve":
                 document.body.style.cursor = 'cell';
+                stop = true;
                 break;
             case "newControlPoint":
                 document.body.style.cursor = 'crosshair';
+                stop = true;
+                break;
+            case "updateAll":
+                this.clear();
+                this.drawCurves();
+                this.draw();
+                this.state = "nothing";
                 break;
             default:
             case "nothing":
                 document.body.style.cursor = 'default';
+                stop = true;
                 break;
         }
-        this.drawCurves();
-        this.draw();
+        if (!stop) {
+            setTimeout(()=>{this.run();},1);
+        }
     }
     resize() {
         console.log('resize')
-        this.canvas.width = this.canvas.clientWidth;
-        this.canvas.height = this.canvas.clientHeight;
-        this.run();
+        this.canvas.width = document.body.clientWidth;
+        this.canvas.height = document.body.clientHeight;
+        console.log(this.canvas.width + ", " + this.canvas.height);
     }
 }
 var app = new BezierApp(document);
@@ -207,11 +244,6 @@ var pb = new Point(300,500);
 var d = new Dimensions(2,2);
 var r = new Rect(p.x,p.y,d.width,d.height);
 
-var c = new BezierCurve();
-c.append(pa);
-c.append(pb);
-c.tvalues = 10;
-
 var controlPoints = [pa,pb];
 var pab = DeCasteljau.interpolate(pa,pb,0.1);
 console.log(pab);
@@ -219,6 +251,13 @@ console.log(pab);
 var pab2 = DeCasteljau.process(controlPoints,0.1);
 console.log(pab2);
 
+
+var c = new BezierCurve(controlPoints);
+c.tvalues = 7;
+c.append(new Point(400,200));
+var pab3 = DeCasteljau.calcPoints(c.controlPoints,c.tvalues);
+console.log('pab3');
+console.log(pab3);
 app.curves.push(c);
 
 app.run();

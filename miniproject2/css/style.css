@@ -1,4 +1,4 @@
-#root, body, canvas {
+#root, body {
     top:0px;
     bottom:0px;
     left:0px;
@@ -11,7 +11,24 @@
     position: absolute;
 }
 canvas {
+    top:0px;
+    left:0px;
+    margin: 0px;
+    padding: 0px;
+    background: white;
+    position: absolute;
+}
+div.canvas {
     z-index: -1;
+    top:0px;
+    left:0px;
+    margin: 0px;
+    padding: 0px;
+    width:100%;
+    height:100%;
+    background: white;
+    position: absolute;
+    overflow: hidden;
 }
 
 #CurveList {
