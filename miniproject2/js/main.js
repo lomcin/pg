@@ -435,7 +435,7 @@ class BezierApp {
         if (this.dragging != null) {
             this.dragging.x = this.mouse.x;
             this.dragging.y = this.mouse.y;
-            this.run('updateAll',stop=true);
+            this.run('updateCurrent',stop=true);
             this.Cursor('none');
         } else {
             this.collidingPoint = this.checkCollision(e.clientX,e.clientY);
@@ -447,12 +447,16 @@ class BezierApp {
     mouseDown(e) {
         if (this.dragging == null && this.collidingPoint != null) {
             this.dragging = this.collidingPoint;
+            this.currentCurve = this.dragging.parent;
+            this.run('updateAll',stop=true);
         }
     }
     mouseUp(e) {
         if (this.dragging != null) {
             this.dragging = null;
+            this.currentCurve = null;
             this.run('nothing');
+            this.run('updateAll',stop=true);
         }
     }
     resize() {
