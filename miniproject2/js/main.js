@@ -1,16 +1,43 @@
 console.log('Main script loaded');
 
 class Point {
-    constructor(x,y) {
-        this.x = x;
-        this.y = y;
+    constructor(x,y, parent = null) {
+        this._x = x;
+        this._y = y;
+        this._parent = parent;
+    }
+    get x() {
+        return this._x;
+    }
+    set x(val) {
+        this._x = val;
+        this.outdate();
+    }
+    get y() {
+        return this._y;
+    }
+    set y(val) {
+        this._y = val;
+        this.outdate();
+    }
+    get parent() {
+        return this._parent;
+    }
+    set parent(val) {
+        this._parent = val;
+        if (this._parent != null) this._parent.outdate();
+    }  
+    outdate() {
+        if (this._parent != null) {
+            this._parent.outdate();
+        }
     }
     distance2Point(p) {
         return this.distance2Coord(p.x,p.y);
     }
     distance2Coord(x, y) {
-        var dx = x - this.x;
-        var dy = y - this.y;
+        var dx = x - this._x;
+        var dy = y - this._y;
         return Math.sqrt(dx*dx + dy*dy);
     }
 }
@@ -69,6 +96,9 @@ class BezierCurve {
         this._tvalues = null;
         this._points = null;
         this._updated = false;
+        this.controlPoints.forEach((p) => {
+            p.parent = this;
+        });
     }
     get tvalues() {
         return this._tvalues;
@@ -86,7 +116,11 @@ class BezierCurve {
     }
     append(point) {
         if (this.controlPoints == null) this.controlPoints = new Array();
+        point.parent = this;
         this.controlPoints.push(point);
+        this.outdate();
+    }
+    outdate() {
         this._updated = false;
     }
     get points() {
@@ -162,7 +196,16 @@ class BezierApp {
             this.app.run();
         };
         doc.body.onmousemove = function (e) {
+            e.preventDefault();
             this.app.mouseMove(e);
+        };
+        doc.body.onmousedown = function (e) {
+            e.preventDefault();
+            this.app.mouseDown(e);
+        };
+        doc.body.onmouseup = function (e) {
+            e.preventDefault();
+            this.app.mouseUp(e);
         };
         this.prepareButtons();
         this.prepareCheckboxes();
@@ -291,7 +334,7 @@ class BezierApp {
         this.drawCurve(ctx, this.currentCurve);
     }
     drawCurrentPoligonals(ctx) {
-        this.drawPoligonalsControlPoints(ctx, this.currentCurve);
+        this.drawPoligonalControlPoints(ctx, this.currentCurve);
     }
     drawCurrentControlPoints(ctx) {
         this.drawControlPointsForCurve(ctx, this.currentCurve);
@@ -335,9 +378,9 @@ class BezierApp {
             this.drawCurrentPoligonals(this.PoligonalsContext2d);
         }
     }
-    run() {
-        var stop = false;
-        console.log('run: ' + this.state);
+    run(state=null,stop=false) {
+        if (state != null) this.state = state;
+        // console.log('run: ' + this.state);
         switch(this.state) {
             case "newCurve":
                 this.Cursor('cell');
@@ -349,6 +392,7 @@ class BezierApp {
                 break;
             case "updateAll":
                 this.updateAll();
+                this.updateCurrent();
                 this.state = "nothing";
                 break;
             case "updateCurrent":
@@ -365,25 +409,49 @@ class BezierApp {
             setTimeout(()=>{this.run();},1);
         }
     }
-    collidingPoint(x, y) {
+    checkCollision(x, y, type='controlPoint') {
         // Checking "collision"
         var rp = null;
         this.curves.forEach((c) => {
-            c.controlPoints.forEach((p) => {
-                if (this.controlPointRadius >= p.distance2Coord(x,y)) {
-                    rp = p;
-                }
-            })
+            if (type == 'controlPoint') {
+                c.controlPoints.forEach((p) => {
+                    if (this.controlPointRadius >= p.distance2Coord(x,y)) {
+                        rp = p;
+                    }
+                })
+            } else if (type == 'curvePoint') {
+                c.points.forEach((p) => {
+                    if (this.controlPointRadius >= p.distance2Coord(x,y)) {
+                        rp = p;
+                    }
+                })
+            }
         })
         return rp;
     }
     mouseMove(e) {
         this.mouse.x = e.clientX;
         this.mouse.y = e.clientY;
-        var p = this.collidingPoint(e.clientX,e.clientY);
-        if (p != null) {
+        if (this.dragging != null) {
+            this.dragging.x = this.mouse.x;
+            this.dragging.y = this.mouse.y;
+            this.run('updateAll',stop=true);
+        }
+        this.collidingPoint = this.checkCollision(e.clientX,e.clientY);
+        if (this.collidingPoint != null) {
             this.Cursor('crosshair');
         } else this.Cursor();
+    }
+    mouseDown(e) {
+        if (this.dragging == null && this.collidingPoint != null) {
+            this.dragging = this.collidingPoint;
+        }
+    }
+    mouseUp(e) {
+        if (this.dragging != null) {
+            this.dragging = null;
+            this.run('nothing');
+        }
     }
     resize() {
         this.allCanvas.forEach((c) => {
