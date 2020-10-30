@@ -101,10 +101,31 @@ class BezierCurve {
 
 class BezierApp {
     constructor(doc) {
-        this.canvas = doc.getElementById('canvas');
-        this.context2d = this.canvas.getContext('2d');
-        this.canvasBuffer = doc.getElementById('canvasBuffer');
-        this.context2dBuffer = this.canvasBuffer.getContext('2d');
+
+        // Poligonals
+        this.PoligonalsCanvas = doc.getElementById('PoligonalsCanvas');
+        this.PoligonalsContext2d = this.PoligonalsCanvas.getContext('2d');
+        this.PoligonalsCanvasBuffer = doc.getElementById('PoligonalsCanvasBuffer');
+        this.PoligonalsContext2dBuffer = this.PoligonalsCanvasBuffer.getContext('2d');
+        
+        // Curves
+        this.CurveCanvas = doc.getElementById('CurveCanvas');
+        this.CurveContext2d = this.CurveCanvas.getContext('2d');
+        this.CurveCanvasBuffer = doc.getElementById('CurveCanvasBuffer');
+        this.CurveContext2dBuffer = this.CurveCanvasBuffer.getContext('2d');
+
+        // Control
+        this.ControlCanvas = doc.getElementById('ControlCanvas');
+        this.ControlContext2d = this.ControlCanvas.getContext('2d');
+        this.ControlCanvasBuffer = doc.getElementById('ControlCanvasBuffer');
+        this.ControlContext2dBuffer = this.ControlCanvasBuffer.getContext('2d');
+
+        // All Canvas
+        this.allCanvas = [  this.PoligonalsCanvas, this.PoligonalsCanvasBuffer,
+                            this.CurveCanvas, this.CurveCanvasBuffer,
+                            this.ControlCanvas, this.ControlCanvasBuffer];
+
+        // Buttons
         this.updateButton = doc.getElementById('Update');
         this.createButton = doc.getElementById('CreateCurve');
         this.deleteButton = doc.getElementById('DeleteCurve');
@@ -170,6 +191,8 @@ class BezierApp {
         this.curveCheckbox.parent = this;
         this.curveCheckbox.onchange = function (e) {
             this.parent.draw_curve = this.checked;
+            this.parent.CurveCanvas.style.visibility = this.checked ? '' : 'hidden';
+            this.parent.CurveCanvasBuffer.style.visibility = this.checked ? '' : 'hidden';
             this.parent.state = "updateAll";
             this.parent.run();
         }
@@ -178,6 +201,8 @@ class BezierApp {
         this.poligonalsCheckbox.parent = this;
         this.poligonalsCheckbox.onchange = function (e) {
             this.parent.draw_poligonalControlPoints = this.checked;
+            this.parent.PoligonalsCanvas.style.visibility = this.checked ? '' : 'hidden';
+            this.parent.PoligonalsCanvasBuffer.style.visibility = this.checked ? '' : 'hidden';
             this.parent.state = "updateAll";
             this.parent.run();
         }
@@ -186,6 +211,8 @@ class BezierApp {
         this.controlPointsCheckbox.parent = this;
         this.controlPointsCheckbox.onchange = function (e) {
             this.parent.draw_controlPoints = this.checked;
+            this.parent.ControlCanvas.style.visibility = this.checked ? '' : 'hidden';
+            this.parent.ControlCanvasBuffer.style.visibility = this.checked ? '' : 'hidden';
             this.parent.state = "updateAll";
             this.parent.run();
         }
@@ -261,9 +288,8 @@ class BezierApp {
         ctx.lineTo(600,600);
         ctx.stroke();
     }
-    clear() {
-        this.context2d.clearRect(0,0,this.canvas.width,this.canvas.height);
-        this.context2dBuffer.clearRect(0,0,this.canvas.width,this.canvas.height);
+    clear(ctx) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     }
     run() {
         var stop = false;
@@ -278,18 +304,33 @@ class BezierApp {
                 stop = true;
                 break;
             case "updateAll":
-                this.clear();
-                if (this.draw_curve) this.drawCurves(this.context2dBuffer);
-                if (this.draw_controlPoints) this.drawControlPoints(this.context2dBuffer);
-                if (this.draw_poligonalControlPoints) this.drawPoligonals(this.context2dBuffer);
-                this.draw(this.context2dBuffer);
-                //this.context2dBuffer.drawImage(this.canvas, 0, 0);
-                //this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+                if (this.draw_curve) {
+                    this.clear(this.CurveContext2dBuffer);
+                    this.drawCurves(this.CurveContext2dBuffer);
+                }
+                if (this.draw_controlPoints) {
+                    this.clear(this.ControlContext2dBuffer);
+                    this.drawControlPoints(this.ControlContext2dBuffer);
+                }
+                if (this.draw_poligonalControlPoints) {
+                    this.clear(this.PoligonalsContext2dBuffer);
+                    this.drawPoligonals(this.PoligonalsContext2dBuffer);
+                }
                 this.state = "nothing";
                 break;
             case "updateCurrent":
-                this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
-                if (this.draw_curve) this.drawCurrentCurve(this.context2d);
+                if (this.draw_curve) {
+                    this.clear(this.CurveContext2d);
+                    this.drawCurves(this.CurveContext2d);
+                }
+                if (this.draw_controlPoints) {
+                    this.clear(this.ControlContext2d);
+                    this.drawControlPoints(this.ControlContext2d);
+                }
+                if (this.draw_poligonalControlPoints) {
+                    this.clear(this.PoligonalsContext2d);
+                    this.drawPoligonals(this.PoligonalsContext2d);
+                }
                 this.state = "nothing";
                 break;
             default:
@@ -303,10 +344,11 @@ class BezierApp {
         }
     }
     resize() {
-        this.canvas.width = document.body.clientWidth;
-        this.canvas.height = document.body.clientHeight;
-        this.canvasBuffer.width = document.body.clientWidth;
-        this.canvasBuffer.height = document.body.clientHeight;
+        this.allCanvas.forEach((c) => {
+            console.log(c);
+            c.width = document.body.clientWidth;
+            c.height = document.body.clientHeight;
+        });
     }
 }
 var app = new BezierApp(document);
