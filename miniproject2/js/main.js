@@ -5,6 +5,14 @@ class Point {
         this.x = x;
         this.y = y;
     }
+    distance2Point(p) {
+        return this.distance2Coord(p.x,p.y);
+    }
+    distance2Coord(x, y) {
+        var dx = x - this.x;
+        var dy = y - this.y;
+        return Math.sqrt(dx*dx + dy*dy);
+    }
 }
 
 class Dimensions {
@@ -154,8 +162,7 @@ class BezierApp {
             this.app.run();
         };
         doc.body.onmousemove = function (e) {
-            this.app.mouse.x = e.clientX;
-            this.app.mouse.y = e.clientY;
+            this.app.mouseMove(e);
         };
         this.prepareButtons();
         this.prepareCheckboxes();
@@ -239,6 +246,7 @@ class BezierApp {
     }
     drawCurves(ctx) {
         for (var i = 0; i < this.curves.length; ++i) {
+            if (this.curves[i] === this.currentCurve) continue;
             this.drawCurve(ctx,this.curves[i]);
         }
     }
@@ -269,16 +277,24 @@ class BezierApp {
     }
     drawPoligonals(ctx) {
         for (var i = 0; i < this.curves.length; ++i) {
+            if (this.curves[i] === this.currentCurve) continue;
             this.drawPoligonalControlPoints(ctx,this.curves[i]);
         }
     }
     drawControlPoints(ctx) {
         for (var i = 0; i < this.curves.length; ++i) {
+            if (this.curves[i] === this.currentCurve) continue;
             this.drawControlPointsForCurve(ctx,this.curves[i]);
         }
     }
     drawCurrentCurve(ctx) {
-        this.drawCurve(ctx,this.currentCurve);
+        this.drawCurve(ctx, this.currentCurve);
+    }
+    drawCurrentPoligonals(ctx) {
+        this.drawPoligonalsControlPoints(ctx, this.currentCurve);
+    }
+    drawCurrentControlPoints(ctx) {
+        this.drawControlPointsForCurve(ctx, this.currentCurve);
     }
     draw(ctx) {
         ctx.strokeStyle = '#000';
@@ -291,51 +307,57 @@ class BezierApp {
     clear(ctx) {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     }
+    updateAll() {
+        if (this.draw_curve) {
+            this.clear(this.CurveContext2dBuffer);
+            this.drawCurves(this.CurveContext2dBuffer);
+        }
+        if (this.draw_controlPoints) {
+            this.clear(this.ControlContext2dBuffer);
+            this.drawControlPoints(this.ControlContext2dBuffer);
+        }
+        if (this.draw_poligonalControlPoints) {
+            this.clear(this.PoligonalsContext2dBuffer);
+            this.drawPoligonals(this.PoligonalsContext2dBuffer);
+        }
+    }
+    updateCurrent() {
+        if (this.draw_curve) {
+            this.clear(this.CurveContext2d);
+            this.drawCurrentCurve(this.CurveContext2d);
+        }
+        if (this.draw_controlPoints) {
+            this.clear(this.ControlContext2d);
+            this.drawCurrentControlPoints(this.ControlContext2d);
+        }
+        if (this.draw_poligonalControlPoints) {
+            this.clear(this.PoligonalsContext2d);
+            this.drawCurrentPoligonals(this.PoligonalsContext2d);
+        }
+    }
     run() {
         var stop = false;
         console.log('run: ' + this.state);
         switch(this.state) {
             case "newCurve":
-                document.body.style.cursor = 'cell';
+                this.Cursor('cell');
                 stop = true;
                 break;
             case "newControlPoint":
-                document.body.style.cursor = 'crosshair';
+                this.Cursor('crosshair');
                 stop = true;
                 break;
             case "updateAll":
-                if (this.draw_curve) {
-                    this.clear(this.CurveContext2dBuffer);
-                    this.drawCurves(this.CurveContext2dBuffer);
-                }
-                if (this.draw_controlPoints) {
-                    this.clear(this.ControlContext2dBuffer);
-                    this.drawControlPoints(this.ControlContext2dBuffer);
-                }
-                if (this.draw_poligonalControlPoints) {
-                    this.clear(this.PoligonalsContext2dBuffer);
-                    this.drawPoligonals(this.PoligonalsContext2dBuffer);
-                }
+                this.updateAll();
                 this.state = "nothing";
                 break;
             case "updateCurrent":
-                if (this.draw_curve) {
-                    this.clear(this.CurveContext2d);
-                    this.drawCurves(this.CurveContext2d);
-                }
-                if (this.draw_controlPoints) {
-                    this.clear(this.ControlContext2d);
-                    this.drawControlPoints(this.ControlContext2d);
-                }
-                if (this.draw_poligonalControlPoints) {
-                    this.clear(this.PoligonalsContext2d);
-                    this.drawPoligonals(this.PoligonalsContext2d);
-                }
+                this.updateCurrent();
                 this.state = "nothing";
                 break;
             default:
             case "nothing":
-                document.body.style.cursor = 'default';
+                this.Cursor();
                 stop = true;
                 break;
         }
@@ -343,12 +365,34 @@ class BezierApp {
             setTimeout(()=>{this.run();},1);
         }
     }
+    collidingPoint(x, y) {
+        // Checking "collision"
+        var rp = null;
+        this.curves.forEach((c) => {
+            c.controlPoints.forEach((p) => {
+                if (this.controlPointRadius >= p.distance2Coord(x,y)) {
+                    rp = p;
+                }
+            })
+        })
+        return rp;
+    }
+    mouseMove(e) {
+        this.mouse.x = e.clientX;
+        this.mouse.y = e.clientY;
+        var p = this.collidingPoint(e.clientX,e.clientY);
+        if (p != null) {
+            this.Cursor('crosshair');
+        } else this.Cursor();
+    }
     resize() {
         this.allCanvas.forEach((c) => {
-            console.log(c);
             c.width = document.body.clientWidth;
             c.height = document.body.clientHeight;
         });
+    }
+    Cursor(type = 'default') {
+        document.body.style.cursor = type;
     }
 }
 var app = new BezierApp(document);
@@ -361,18 +405,18 @@ var r = new Rect(p.x,p.y,d.width,d.height);
 
 var controlPoints = [pa,pb];
 var pab = DeCasteljau.interpolate(pa,pb,0.1);
-console.log(pab);
+// console.log(pab);
 
 var pab2 = DeCasteljau.process(controlPoints,0.1);
-console.log(pab2);
+// console.log(pab2);
 
 
 var c = new BezierCurve(controlPoints);
 c.tvalues = 7;
 c.append(new Point(400,200));
 var pab3 = DeCasteljau.calcPoints(c.controlPoints,c.tvalues);
-console.log('pab3');
-console.log(pab3);
+// console.log('pab3');
+// console.log(pab3);
 app.curves.push(c);
 
 app.run();
