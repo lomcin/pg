@@ -221,9 +221,9 @@ class BezierApp {
         this.prepareCurveCheckbox();
         this.preparePoligonalsCheckbox();
         this.prepareControlPointsCheckbox();
-        this.draw_curve = this.curveCheckbox.checked;
-        this.draw_controlPoints = this.controlPointsCheckbox.checked;
-        this.draw_poligonalControlPoints = this.poligonalsCheckbox.checked;
+        this.curveCheckbox.checked = this.draw_curve;
+        this.controlPointsCheckbox.checked = this.draw_controlPoints;
+        this.poligonalsCheckbox.checked = this.draw_poligonalControlPoints;
     }
     drawCurve(ctx,curve) {
         if (curve == null) return;
