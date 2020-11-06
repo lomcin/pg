@@ -96,9 +96,11 @@ class BezierCurve {
         this._tvalues = null;
         this._points = null;
         this._updated = false;
-        this.controlPoints.forEach((p) => {
-            p.parent = this;
-        });
+        if (this.controlPoints) {
+            this.controlPoints.forEach((p) => {
+                p.parent = this;
+            });
+        }
     }
     get tvalues() {
         return this._tvalues;
@@ -144,6 +146,9 @@ class BezierCurve {
 class BezierApp {
     constructor(doc) {
 
+        // Curve samples
+        this.Number = doc.getElementById('Number');
+        
         // Poligonals
         this.PoligonalsCanvas = doc.getElementById('PoligonalsCanvas');
         this.PoligonalsContext2d = this.PoligonalsCanvas.getContext('2d');
@@ -155,13 +160,15 @@ class BezierApp {
         this.CurveContext2d = this.CurveCanvas.getContext('2d');
         this.CurveCanvasBuffer = doc.getElementById('CurveCanvasBuffer');
         this.CurveContext2dBuffer = this.CurveCanvasBuffer.getContext('2d');
-
+        
         // Control
         this.ControlCanvas = doc.getElementById('ControlCanvas');
         this.ControlContext2d = this.ControlCanvas.getContext('2d');
         this.ControlCanvasBuffer = doc.getElementById('ControlCanvasBuffer');
         this.ControlContext2dBuffer = this.ControlCanvasBuffer.getContext('2d');
-
+        // this.canvas = doc.getElementsByClassName('canvas')[0];
+        this.canvas = this.ControlCanvasBuffer;
+        
         // All Canvas
         this.allCanvas = [  this.PoligonalsCanvas, this.PoligonalsCanvasBuffer,
                             this.CurveCanvas, this.CurveCanvasBuffer,
@@ -178,6 +185,9 @@ class BezierApp {
         this.poligonalsCheckbox = doc.getElementById('PoligonalsCheckbox');
         this.controlPointsCheckbox = doc.getElementById('ControlPointsCheckbox');
 
+        this.ControlPointsDisabledColor = '#090';
+        this.ControlPointsEnabledColor = '#0C0';
+
         this.currentCurve = null;
         this.draw_controlPoints = true;
         this.draw_poligonalControlPoints = true;
@@ -187,6 +197,7 @@ class BezierApp {
         this.state = "nothing";
         this.TWOPI = 2 * Math.PI;
         this.controlPointRadius = 4;
+        this.isHoveringCanvas = false;
         doc.body.app = this;
         doc.body.onresize = function (e) {
         };
@@ -196,16 +207,38 @@ class BezierApp {
             this.app.run();
         };
         doc.body.onmousemove = function (e) {
-            e.preventDefault();
+            // e.preventDefault();
             this.app.mouseMove(e);
         };
-        doc.body.onmousedown = function (e) {
-            e.preventDefault();
-            this.app.mouseDown(e);
+        this.canvas.onmouseover = function (e) {
+            console.log("hovering")
+            this.app.isHoveringCanvas = true;
         };
-        doc.body.onmouseup = function (e) {
-            e.preventDefault();
+        this.canvas.onmouseout = function (e) {
+            this.app.isHoveringCanvas = false;
+        };
+        doc.body.onmousedown = function (e) {
+            this.app.canvas.onselect = (e) => {
+                e.preventDefault();
+            };
+            // if (this.app.isHoveringCanvas) {
+                // e.preventDefault();
+                this.app.mouseDown(e);
+            // } else {
+
+            // }
+        };
+        doc.body.onmouseup = doc.body.onmouseup = function (e) {
+            // e.preventDefault();
+            this.app.canvas.onselect = null;
             this.app.mouseUp(e);
+        };
+        this.Number.app = this;
+        this.Number.onchange = function (e) {
+            if (this.app.currentCurve != null) {
+                this.app.currentCurve.tvalues = e.target.value;
+                this.app.run('updateAll',stop=true);
+            }
         };
         this.prepareButtons();
         this.prepareCheckboxes();
@@ -278,7 +311,7 @@ class BezierApp {
     drawCurve(ctx,curve) {
         if (curve == null) return;
         if (curve.points == null) return;
-        ctx.strokeStyle = '#000';
+        ctx.strokeStyle = (curve === this.currentCurve ? '#000' : '#000');
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(curve.points[0].x,curve.points[0].y);
@@ -296,7 +329,7 @@ class BezierApp {
     drawPoligonalControlPoints(ctx,curve) {
         if (curve == null) return;
         if (curve.controlPoints == null) return;
-        ctx.strokeStyle = '#0C0';
+        ctx.strokeStyle = (curve === this.currentCurve ? this.ControlPointsEnabledColor : this.ControlPointsDisabledColor);
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(curve.controlPoints[0].x,curve.controlPoints[0].y);
@@ -308,9 +341,9 @@ class BezierApp {
     drawControlPointsForCurve(ctx,curve) {
         if (curve == null) return;
         if (curve.controlPoints == null) return;
-        ctx.strokeStyle = '#0C0';
+        ctx.strokeStyle = (curve === this.currentCurve ? this.ControlPointsEnabledColor : this.ControlPointsDisabledColor);
         ctx.lineWidth = 1;
-        ctx.fillStyle = '#0C0';
+        ctx.fillStyle = (curve === this.currentCurve ? this.ControlPointsEnabledColor : this.ControlPointsDisabledColor);
         for (var i = 0; i < curve.controlPoints.length; ++i) {
             ctx.beginPath();
             ctx.arc(curve.controlPoints[i].x,curve.controlPoints[i].y, this.controlPointRadius, 0, this.TWOPI);
@@ -413,18 +446,20 @@ class BezierApp {
         // Checking "collision"
         var rp = null;
         this.curves.forEach((c) => {
-            if (type == 'controlPoint') {
-                c.controlPoints.forEach((p) => {
-                    if (this.controlPointRadius >= p.distance2Coord(x,y)) {
-                        rp = p;
-                    }
-                })
-            } else if (type == 'curvePoint') {
-                c.points.forEach((p) => {
-                    if (this.controlPointRadius >= p.distance2Coord(x,y)) {
-                        rp = p;
-                    }
-                })
+            if (c.controlPoints) {
+                if (type == 'controlPoint') {
+                    c.controlPoints.forEach((p) => {
+                        if (this.controlPointRadius >= p.distance2Coord(x,y)) {
+                            rp = p;
+                        }
+                    })
+                } else if (type == 'curvePoint') {
+                    c.points.forEach((p) => {
+                        if (this.controlPointRadius >= p.distance2Coord(x,y)) {
+                            rp = p;
+                        }
+                    })
+                }
             }
         })
         return rp;
@@ -454,7 +489,7 @@ class BezierApp {
     mouseUp(e) {
         if (this.dragging != null) {
             this.dragging = null;
-            this.currentCurve = null;
+            //this.currentCurve = null;
             this.run('nothing');
             this.run('updateAll',stop=true);
         }
@@ -488,6 +523,8 @@ var pab2 = DeCasteljau.process(controlPoints,0.1);
 var c = new BezierCurve(controlPoints);
 c.tvalues = 7;
 c.append(new Point(400,200));
+c.append(new Point(420,200));
+c.append(new Point(450,200));
 var pab3 = DeCasteljau.calcPoints(c.controlPoints,c.tvalues);
 // console.log('pab3');
 // console.log(pab3);

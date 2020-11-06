@@ -37,6 +37,7 @@ div.canvas {
 
 div.menu {
     width:120px;
+    z-index:3;
 }
 button {
     border: 1px solid transparent;
@@ -60,6 +61,10 @@ button.active {
 }
 /* div > input[type=checkbox] { */
 div.checkbox {
+    width: 100%;
+    display: block;
+}
+div.number {
     width: 100%;
     display: block;
 }
