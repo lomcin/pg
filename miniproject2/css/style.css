@@ -9,6 +9,7 @@
     height:100%;
     background: white;
     position: absolute;
+    user-select: none;
 }
 canvas {
     top:0px;
@@ -36,8 +37,10 @@ div.canvas {
 }
 
 div.menu {
-    width:120px;
+    width:160px;
     z-index:3;
+    background-color:lightgray;
+    height: 100%;
 }
 button {
     border: 1px solid transparent;
@@ -59,7 +62,11 @@ button.active {
     border: 1px solid blue;
     font-weight: bold;
 }
-/* div > input[type=checkbox] { */
+div > input[type=checkbox] {
+    scale: 2;
+    margin: 10%;
+}
+
 div.checkbox {
     width: 100%;
     display: block;

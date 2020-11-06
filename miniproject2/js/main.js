@@ -96,9 +96,14 @@ class BezierCurve {
         this._tvalues = null;
         this._points = null;
         this._updated = false;
+        this._updateControlPoints();
+    }
+    _updateControlPoints() {
         if (this.controlPoints) {
+            var counter = 0;
             this.controlPoints.forEach((p) => {
                 p.parent = this;
+                p.id = counter++;
             });
         }
     }
@@ -119,7 +124,12 @@ class BezierCurve {
     append(point) {
         if (this.controlPoints == null) this.controlPoints = new Array();
         point.parent = this;
+        point.id = this.controlPoints.length;
         this.controlPoints.push(point);
+        this.outdate();
+    }
+    remove(point) {
+        this.controlPoints.splice(point.id,1);
         this.outdate();
     }
     outdate() {
@@ -128,6 +138,7 @@ class BezierCurve {
     get points() {
         if (this._points == null || this._updated == false) {
             if (this.tvalues != null) {
+                this._updateControlPoints();
                 this._points = DeCasteljau.calcPoints(this.controlPoints,this.tvalues);
                 this._updated = true;
             } else {
@@ -166,8 +177,12 @@ class BezierApp {
         this.ControlContext2d = this.ControlCanvas.getContext('2d');
         this.ControlCanvasBuffer = doc.getElementById('ControlCanvasBuffer');
         this.ControlContext2dBuffer = this.ControlCanvasBuffer.getContext('2d');
-        // this.canvas = doc.getElementsByClassName('canvas')[0];
-        this.canvas = this.ControlCanvasBuffer;
+        this.canvas = doc.getElementsByClassName('canvas')[0];
+        this.menu = doc.getElementsByClassName('menu')[0];
+        this.menu.onselect = (e) => {
+            e.preventDefault();
+        };
+        // this.canvas = this.ControlCanvasBuffer;
         
         // All Canvas
         this.allCanvas = [  this.PoligonalsCanvas, this.PoligonalsCanvasBuffer,
@@ -465,18 +480,21 @@ class BezierApp {
         return rp;
     }
     mouseMove(e) {
-        this.mouse.x = e.clientX;
+        this.mouse.x = e.clientX - document.body.app.menu.clientWidth;
         this.mouse.y = e.clientY;
-        if (this.dragging != null) {
-            this.dragging.x = this.mouse.x;
-            this.dragging.y = this.mouse.y;
-            this.run('updateCurrent',stop=true);
-            this.Cursor('none');
-        } else {
-            this.collidingPoint = this.checkCollision(e.clientX,e.clientY);
-            if (this.collidingPoint != null) {
-                this.Cursor('crosshair');
-            } else this.Cursor();
+        if (this.state == "nothing") {
+            // #TODO avoiding reseting cursor when creating curve mode
+            if (this.dragging != null) {
+                this.dragging.x = this.mouse.x;
+                this.dragging.y = this.mouse.y;
+                this.run('updateCurrent',stop=true);
+                this.Cursor('none');
+            } else {
+                this.collidingPoint = this.checkCollision(this.mouse.x,this.mouse.y);
+                if (this.collidingPoint != null) {
+                    this.Cursor('crosshair');
+                } else this.Cursor();
+            }
         }
     }
     mouseDown(e) {
@@ -488,16 +506,19 @@ class BezierApp {
     }
     mouseUp(e) {
         if (this.dragging != null) {
+            if (this.currentCurve != null && (this.dragging.x < 0 || this.dragging.y < 0)) {
+                this.currentCurve.remove(this.dragging);
+            }
             this.dragging = null;
-            //this.currentCurve = null;
             this.run('nothing');
             this.run('updateAll',stop=true);
         }
     }
     resize() {
         this.allCanvas.forEach((c) => {
-            c.width = document.body.clientWidth;
-            c.height = document.body.clientHeight;
+            c.width = window.screen.availWidth;
+            c.height = window.screen.availHeight;
+            c.style.left = document.body.app.menu.clientWidth;
         });
     }
     Cursor(type = 'default') {
