@@ -1,4 +1,4 @@
-console.log('Main script loaded');
+console.info("Created by Lucas Maggi.");
 
 class Point {
     constructor(x,y, parent = null) {
@@ -164,6 +164,7 @@ class BezierApp {
         // Curve samples
         this.Number = doc.getElementById('Number');
         this.Points = doc.getElementById('Points');
+        this.SelectedCurve = doc.getElementById('SelectedCurve');
         
         // Poligonals
         this.PoligonalsCanvas = doc.getElementById('PoligonalsCanvas');
@@ -191,14 +192,19 @@ class BezierApp {
         
         // All Canvas
         this.allCanvas = [  this.PoligonalsCanvas, this.PoligonalsCanvasBuffer,
-                            this.CurveCanvas, this.CurveCanvasBuffer,
-                            this.ControlCanvas, this.ControlCanvasBuffer];
-
+            this.CurveCanvas, this.CurveCanvasBuffer,
+            this.ControlCanvas, this.ControlCanvasBuffer];
+            
         // Buttons
         this.updateButton = doc.getElementById('Update');
         this.createButton = doc.getElementById('CreateCurve');
         this.deleteButton = doc.getElementById('DeleteCurve');
-        
+        this.deleteAllButton = doc.getElementById('DeleteAll');
+
+        // Prev and Next buttons
+        this.previousButton = doc.getElementById('PrevCurve');
+        this.nextButton = doc.getElementById('NextCurve');
+            
         this.curveList = doc.getElementById('CurveList');
 
         this.curveCheckbox = doc.getElementById('CurveCheckbox');
@@ -294,7 +300,6 @@ class BezierApp {
     }
     removeCurve(curve) {
         if (curve != null) {
-            console.log('remove: ' , curve.id);
             this.curves.splice(curve.id,1);
             for (var i = 0; i < this.curves.length; ++i) {
                 this.curves[i].id = i;
@@ -314,10 +319,42 @@ class BezierApp {
         }
 
     }
+    prepareDeleteAllButton() {
+        this.deleteAllButton.parent = this;
+        this.deleteAllButton.onclick = function (e) {
+            this.parent.currentCurve = null;
+            this.parent.curves = new Array();
+            this.parent.state = "updateAll";
+            this.parent.run();
+        }
+
+    }
+    preparePreviousAndNextButtons() {
+        this.previousButton.parent = this;
+        this.previousButton.onclick = function (e) {
+            if (this.parent.currentCurve != null) {
+                    var pid = (this.parent.currentCurve.id + this.parent.curves.length - 1)%this.parent.curves.length;
+                    this.parent.currentCurve = this.parent.curves[pid];
+                    this.parent.state = "updateAll";
+                    this.parent.run();
+            }
+        }
+        this.nextButton.parent = this;
+        this.nextButton.onclick = function (e) {
+            if (this.parent.currentCurve != null) {
+                var nid = (this.parent.currentCurve.id + 1)%this.parent.curves.length;
+                this.parent.currentCurve = this.parent.curves[nid];
+                this.parent.state = "updateAll";
+                this.parent.run();
+            }
+        }
+    }
     prepareButtons() {
         this.prepareCreateButton();
         this.prepareDeleteButton();
         this.prepareUpdateButton();
+        this.preparePreviousAndNextButtons();
+        this.prepareDeleteAllButton();
     }
     prepareCurveCheckbox() {
         this.curveCheckbox.parent = this;
@@ -492,6 +529,8 @@ class BezierApp {
                 stop = true;
                 break;
         }
+        if (this.currentCurve == null) this.SelectedCurve.innerHTML = "&#128522";
+        else this.SelectedCurve.innerHTML = this.currentCurve.id;
         if (!stop) {
             setTimeout(()=>{this.run();},1);
         }
@@ -558,7 +597,6 @@ class BezierApp {
         }
     }
     mouseUp(e) {
-        console.log('which', e.which);
         var ret = true;
         if (this.dragging != null) {
             if (this.currentCurve != null) {
@@ -585,6 +623,8 @@ class BezierApp {
                 if (updatedCurrent) this.run('updateCurrent');
                 else this.run('updateAll');
                 ret = false;
+            } else {
+                this.currentCurve = null;
             }
         } else this.Cursor();
         return ret;

@@ -13,9 +13,14 @@
             <canvas id="ControlCanvasBuffer"></canvas>
         </div>
         <div class="menu">
+            <h2>Bezier</h2>
             <button id="Update">Update</button>
             <button id="CreateCurve">Create curve</button>
             <button id="DeleteCurve">Delete curve</button>
+            <button id="PrevCurve">Prev</button>
+            <label id="SelectedCurve"></label>
+            <button id="NextCurve">Next</button>
+            <button id="DeleteAll">Delete all curves</button>
             <div class="checkbox">
                 <input id="CurveCheckbox" type="checkbox">Curves
             </div>
@@ -29,8 +34,8 @@
                 Points:<input id="Points" type="number" min="1" placeholder="Points" alt="Points" value="7">
             </div>
             <list id="CurveList"></list>
+            <h2>Created by</h2><h2><a href="https://github.com/lomcin">Lucas Maggi</a></h2>
         </div>
-        <h2>Bezier</h2>
         <script src="js/main.js"></script>
     </body>
 </html>

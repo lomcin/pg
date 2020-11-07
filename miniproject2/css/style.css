@@ -1,3 +1,6 @@
+/*
+* Created by Lucas Maggi.
+*/
 #root, body {
     top:0px;
     bottom:0px;
@@ -66,6 +69,19 @@ div > input[type=checkbox] {
     scale: 2;
     margin: 10%;
 }
+button[id=PrevCurve], button[id=NextCurve] {
+    display: unset;
+    width: 40%;
+}
+button[id=NextCurve] {
+    right: 0px;
+    float:right;
+    position: relative;
+}
+label[id=SelectedCurve] {
+    float:center;
+    text-align: center;
+}
 
 div.checkbox {
     width: 100%;
@@ -74,4 +90,14 @@ div.checkbox {
 div.number {
     width: 100%;
     display: block;
+}
+
+h2 {
+    margin: 0px;
+    padding: 4px;
+    text-align: center;
+}
+
+a { 
+    color: #000;
 }
