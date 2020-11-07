@@ -70,22 +70,26 @@ class DeCasteljau {
                         pa.y*(1-t) + pb.y*t);
     }
     static process(controlPoints, t) {
-        var oldLevel = controlPoints.slice(0,controlPoints.length);
         var actualLevel = new Array();
-        while (oldLevel.length >= 2) {
-            actualLevel = [];
-            for (var i = 0; i < oldLevel.length-1; ++i) {
-                actualLevel.push(this.interpolate(oldLevel[i], oldLevel[i+1],t));
+        if (controlPoints != null) {
+            var oldLevel = controlPoints.slice(0,controlPoints.length);
+            while (oldLevel.length >= 2) {
+                actualLevel = [];
+                for (var i = 0; i < oldLevel.length-1; ++i) {
+                    actualLevel.push(this.interpolate(oldLevel[i], oldLevel[i+1],t));
+                }
+                oldLevel = actualLevel;
             }
-            oldLevel = actualLevel;
         }
         return actualLevel;
     }
     static calcPoints(controlPoints, tvalues) {
         var points = new Array();
-        for (var i = 0; i < tvalues.length; ++i) {
-            points.push(DeCasteljau.process(controlPoints, tvalues[i])[0]);
-        }
+        if (controlPoints != null && controlPoints.length > 1) {
+            for (var i = 0; i < tvalues.length; ++i) {
+                points.push(DeCasteljau.process(controlPoints, tvalues[i])[0]);
+            }
+        } else return null;
         return points;
     }
 }
@@ -159,6 +163,7 @@ class BezierApp {
 
         // Curve samples
         this.Number = doc.getElementById('Number');
+        this.Points = doc.getElementById('Points');
         
         // Poligonals
         this.PoligonalsCanvas = doc.getElementById('PoligonalsCanvas');
@@ -211,7 +216,7 @@ class BezierApp {
         this.mouse = new Point(-1,-1);
         this.state = "nothing";
         this.TWOPI = 2 * Math.PI;
-        this.controlPointRadius = 4;
+        this.controlPointRadius = 5;
         this.isHoveringCanvas = false;
         doc.body.app = this;
         doc.body.onresize = function (e) {
@@ -226,7 +231,6 @@ class BezierApp {
             this.app.mouseMove(e);
         };
         this.canvas.onmouseover = function (e) {
-            console.log("hovering")
             this.app.isHoveringCanvas = true;
         };
         this.canvas.onmouseout = function (e) {
@@ -248,8 +252,9 @@ class BezierApp {
             this.app.canvas.onselect = null;
             this.app.mouseUp(e);
         };
+        this.Points.app = this;
         this.Number.app = this;
-        this.Number.onchange = function (e) {
+        this.Points.onchange = function (e) {
             if (this.app.currentCurve != null) {
                 this.app.currentCurve.tvalues = e.target.value;
                 this.app.run('updateAll',stop=true);
@@ -258,21 +263,23 @@ class BezierApp {
         this.prepareButtons();
         this.prepareCheckboxes();
     }
+    createCurveToggle(e=this) {
+        if (e.state == 'newCurve') {
+            e.state = 'nothing';
+            // e.currentCurve = null;
+        } else {
+            e.state = 'newCurve';
+            e.currentCurve = new BezierCurve();
+            e.currentCurve.tvalues = e.Points.value;
+            e.appendCurve(e.currentCurve);
+        }
+        e.run();
+    }
     prepareCreateButton() {
         this.createButton.parent = this;
-        this.createButton.onclick = function (e) {
-            if (this.parent.state == 'newCurve') {
-                this.parent.state = 'nothing';
-                this.classList.remove('active');
-                this.parent.curves.push(this.parent.currentCurve);
-                this.parent.currentCurve = null;
-            } else {
-                this.parent.state = 'newCurve';
-                this.classList.add('active');
-                this.parent.currentCurve = new BezierCurve();
-            }
-            this.parent.run();
-        }
+        this.createButton.onclick = (e) => {
+            e.target.parent.createCurveToggle(e.target.parent)
+        };
     }
     prepareUpdateButton() {
         this.updateButton.parent = this;
@@ -281,8 +288,35 @@ class BezierApp {
             this.parent.run();
         }
     }
+    appendCurve(curve) {
+        curve.id = this.curves.length;
+        this.curves.push(curve);
+    }
+    removeCurve(curve) {
+        if (curve != null) {
+            console.log('remove: ' , curve.id);
+            this.curves.splice(curve.id,1);
+            for (var i = 0; i < this.curves.length; ++i) {
+                this.curves[i].id = i;
+            }
+        }
+    }
+    removeCurrentCurve() {
+        this.removeCurve(this.currentCurve);
+        this.currentCurve = null;
+    }
+    prepareDeleteButton() {
+        this.deleteButton.parent = this;
+        this.deleteButton.onclick = function (e) {
+            this.parent.removeCurrentCurve();
+            this.parent.state = "updateAll";
+            this.parent.run();
+        }
+
+    }
     prepareButtons() {
         this.prepareCreateButton();
+        this.prepareDeleteButton();
         this.prepareUpdateButton();
     }
     prepareCurveCheckbox() {
@@ -326,6 +360,7 @@ class BezierApp {
     drawCurve(ctx,curve) {
         if (curve == null) return;
         if (curve.points == null) return;
+        if (curve.points.length == 0) return;
         ctx.strokeStyle = (curve === this.currentCurve ? '#000' : '#000');
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -344,6 +379,7 @@ class BezierApp {
     drawPoligonalControlPoints(ctx,curve) {
         if (curve == null) return;
         if (curve.controlPoints == null) return;
+        if (curve.controlPoints.length == 0) return;
         ctx.strokeStyle = (curve === this.currentCurve ? this.ControlPointsEnabledColor : this.ControlPointsDisabledColor);
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -356,6 +392,7 @@ class BezierApp {
     drawControlPointsForCurve(ctx,curve) {
         if (curve == null) return;
         if (curve.controlPoints == null) return;
+        if (curve.controlPoints.length == 0) return;
         ctx.strokeStyle = (curve === this.currentCurve ? this.ControlPointsEnabledColor : this.ControlPointsDisabledColor);
         ctx.lineWidth = 1;
         ctx.fillStyle = (curve === this.currentCurve ? this.ControlPointsEnabledColor : this.ControlPointsDisabledColor);
@@ -432,6 +469,7 @@ class BezierApp {
         switch(this.state) {
             case "newCurve":
                 this.Cursor('cell');
+                this.createButton.classList.add('active');
                 stop = true;
                 break;
             case "newControlPoint":
@@ -449,7 +487,8 @@ class BezierApp {
                 break;
             default:
             case "nothing":
-                this.Cursor();
+                // this.Cursor();
+                this.createButton.classList.remove('active');
                 stop = true;
                 break;
         }
@@ -479,6 +518,10 @@ class BezierApp {
         })
         return rp;
     }
+    checkInsideCanvas(p) {
+        if (p.x >= 0 && p.y >=0 && p.x < this.canvas.clientWidth && p.y < this.canvas.clientHeight) return true;
+        else return false;
+    }
     mouseMove(e) {
         this.mouse.x = e.clientX - document.body.app.menu.clientWidth;
         this.mouse.y = e.clientY;
@@ -488,31 +531,63 @@ class BezierApp {
                 this.dragging.x = this.mouse.x;
                 this.dragging.y = this.mouse.y;
                 this.run('updateCurrent',stop=true);
-                this.Cursor('none');
+                this.Cursor('grabbing');
             } else {
                 this.collidingPoint = this.checkCollision(this.mouse.x,this.mouse.y);
                 if (this.collidingPoint != null) {
-                    this.Cursor('crosshair');
+                    this.Cursor('grab');
                 } else this.Cursor();
             }
         }
     }
     mouseDown(e) {
-        if (this.dragging == null && this.collidingPoint != null) {
-            this.dragging = this.collidingPoint;
-            this.currentCurve = this.dragging.parent;
-            this.run('updateAll',stop=true);
+        if (e.which == 1) { // Left click
+            if (this.dragging == null && this.collidingPoint != null) {
+                this.dragging = this.collidingPoint;
+                this.currentCurve = this.dragging.parent;
+                this.Points.value = this.currentCurve.tvalues.length;
+                this.run('updateAll',stop=true);
+            } else if (this.currentCurve != null) {
+                var p = new Point(this.mouse.x, this.mouse.y);
+                if (this.checkInsideCanvas(p)) {
+                    this.currentCurve.append(p);
+                    this.dragging = this.collidingPoint = p;
+                    this.run('updateAll',stop=true);
+                }
+            }
         }
     }
     mouseUp(e) {
+        console.log('which', e.which);
+        var ret = true;
         if (this.dragging != null) {
-            if (this.currentCurve != null && (this.dragging.x < 0 || this.dragging.y < 0)) {
-                this.currentCurve.remove(this.dragging);
+            if (this.currentCurve != null) {
+                if ((this.dragging.x < 0 || this.dragging.y < 0)) {
+                    this.currentCurve.remove(this.dragging);
+                }
             }
             this.dragging = null;
             this.run('nothing');
             this.run('updateAll',stop=true);
         }
+        if (e.which == 1) { // Left click
+            this.collidingPoint = this.checkCollision(this.mouse.x,this.mouse.y);
+            if (this.collidingPoint != null) {
+                this.Cursor('grab');
+            } else this.Cursor();
+        } else if (e.which == 3) { //Right click
+            this.collidingPoint = this.checkCollision(this.mouse.x,this.mouse.y);
+            if (this.collidingPoint != null) {
+                var updatedCurrent = (this.currentCurve === this.collidingPoint.parent);
+                this.currentCurve = this.collidingPoint.parent;
+                this.currentCurve.remove(this.collidingPoint);
+                e.preventDefault();
+                if (updatedCurrent) this.run('updateCurrent');
+                else this.run('updateAll');
+                ret = false;
+            }
+        } else this.Cursor();
+        return ret;
     }
     resize() {
         this.allCanvas.forEach((c) => {
@@ -549,6 +624,12 @@ c.append(new Point(450,200));
 var pab3 = DeCasteljau.calcPoints(c.controlPoints,c.tvalues);
 // console.log('pab3');
 // console.log(pab3);
-app.curves.push(c);
+app.appendCurve(c);
 
 app.run();
+
+window.oncontextmenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+};
