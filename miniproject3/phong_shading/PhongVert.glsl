@@ -19,4 +19,7 @@ void main() {
   vertNormal = normalize(normalMatrix * normal);
   vertLightDir = -lightNormal;
   vertTexCoord = texMatrix * vec4(texCoord, 1.0, 1.0);
+  // if (useNormal) {
+  //   vertNormal = normalMatrix * vec4(texCoord, 1.0, 1.0);
+  // }
 }

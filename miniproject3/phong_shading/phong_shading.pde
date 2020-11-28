@@ -1,5 +1,5 @@
 PShader phong;
-PImage img;
+PImage img, normal_img;
 float scaleFactor = 1;
 
 void setup() {
@@ -8,8 +8,11 @@ void setup() {
   fill(204);
   phong = loadShader("PhongFrag.glsl", "PhongVert.glsl");
   img = loadImage("Texturas/char1_d.png");
+  normal_img = loadImage("Texturas/char1_n.png");
   phong.set("useTexture", true);
   phong.set("useLight", true);
+  phong.set("useNormal", true);
+  phong.set("normalTexture", normal_img);
   //phong.set("difuse", true);
   //phong.set("specular", true);
   phong.set("Kd", 1.0);
@@ -23,12 +26,20 @@ void draw() {
   background(0);
   float dirY = (mouseY / float(height) - 0.5) * 2;
   float dirX = (mouseX / float(width) - 0.5) * 2;
-  directionalLight(204, 204, 204, -dirX, -dirY, -1);
+  float nx = dirX;
+  float ny = dirY;
+  float nz = -1;
+  float norm = sqrt(nx*nx + ny*ny + nz*nz);
+  nx /= norm;
+  ny /= norm;
+  nz /= norm;
+  directionalLight(255,255,255, -nx, -ny, nz);
   translate(width/2, height/2);
   
   beginShape(QUADS);
   texture(img);
   normal(0, 0, 1);
+  //normal(normal_img);
   fill(50, 50, 200);
   int w = int(img.width*scaleFactor);
   int h = int(img.height*scaleFactor);
