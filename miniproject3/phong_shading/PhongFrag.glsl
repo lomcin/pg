@@ -14,6 +14,8 @@ uniform float lightIntensity;
 uniform sampler2D texture;
 uniform sampler2D normalTexture;
 
+uniform mat3 normalMatrix;
+
 varying vec4 vertColor;
 varying vec4 vertTexCoord;
 varying vec3 vertNormal;
@@ -24,8 +26,13 @@ void main() {
   vec4 photonIntensity;
   vec3 normal = vertNormal;
   float cosTheta;
+  // if (int(vertTexCoord.s*200)%2 == 0 || int(vertColor.t*200)%2 == 0) {
+  //   gl_FragColor = vec4(0);
+  //   return;
+  // }
   if (useNormal) {
-    normal = texture2D(normalTexture, vertTexCoord.st).xyz;
+    normal = normalize(texture2D(normalTexture, vertTexCoord.st).rgb);
+    // normal = normalize(normalMatrix * normal);
   }
   if (useLight) {
     cosTheta = max(0.0, dot(vertLightDir, normal));
