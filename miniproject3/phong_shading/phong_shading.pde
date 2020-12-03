@@ -16,6 +16,13 @@ PGraphics cube;
 
 PGraphics render, overlay;
 
+void updateStatus() {
+ overlayStatus = "Character: " + selectedChar + ". (C)\n" +
+                  "Texture: " + (useTexture ? "on" : "off") + ". (T)\n" +
+                  "Light: " + (useLight ? "on" : "off") + ". (L)\n" +
+                  "Normal: " + (useNormal ? "on" : "off") + ". (N)\n"; 
+}
+
 void setup() {
   size(640, 360, P3D);
   render = createGraphics(width,height,P3D);
@@ -44,6 +51,7 @@ void setup() {
   textureMode(NORMAL);
   //render.
   camera(width/2, height/2, 300, width/2, height/2, 0, 0, 1, 0);
+  updateStatus();
 }
 
 void drawText() {
@@ -171,9 +179,9 @@ void keyReleased() {
     useNormal = !useNormal;
     phong.set("useNormal", useNormal);
   }
-  
-  overlayStatus = "Character: " + selectedChar + ".\n" +
-                  "Texture: " + (useTexture ? "on" : "off") + ".\n" +
-                  "Light: " + (useLight ? "on" : "off") + ".\n" +
-                  "Normal: " + (useNormal ? "on" : "off") + ".\n";
+  if (key == 'c') {
+    selectedChar = 1-selectedChar;
+  }
+ 
+  updateStatus();
 }
