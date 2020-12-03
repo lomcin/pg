@@ -1,4 +1,4 @@
-PShader phong;
+PShader defaultShader, phong;
 PImage[] difuseTex = new PImage[2];
 PImage[] normalTex = new PImage[2];
 float scaleFactor = 1;
@@ -7,34 +7,93 @@ int selectedChar = 0;
 String[] difuseTexPath = new String[2];
 String[] normalTexPath = new String[2];
 
+boolean useTexture = true, useLight = true, useNormal = true;
+boolean ambient = true, difuse = true;
+int oriWidth = 640, oriHeight = 360;
+String overlayStatus = "Hello";
+
+PGraphics cube;
+
+PGraphics render, overlay;
+
 void setup() {
   size(640, 360, P3D);
-  noStroke();
-  fill(204);
+  render = createGraphics(width,height,P3D);
+  overlay = createGraphics(width,height,P3D);
+  cube = createGraphics(width, height, P3D);
+  render.noStroke();
   difuseTexPath[0] = "Texturas/char1_d.png";
   difuseTexPath[1] = "Texturas/char2_d.png";
   normalTexPath[0] = "Texturas/char1_n.png";
   normalTexPath[1] = "Texturas/char2_n.png";
   phong = loadShader("PhongFrag.glsl", "PhongVert.glsl");
+  defaultShader = loadShader("DefaultFrag.glsl", "DefaultVert.glsl");
   for (int i = 0; i < 2; i++) {
     difuseTex[i] = loadImage(difuseTexPath[i]);
     normalTex[i] = loadImage(normalTexPath[i]);
   }
-  phong.set("useTexture", true);
-  phong.set("useLight", true);
-  phong.set("useNormal", true);
-  phong.set("normalTexture", normalTex[selectedChar]);
+  phong.set("useTexture", useTexture);
+  phong.set("useLight", useLight);
+  phong.set("useNormal", useNormal);
   //phong.set("difuse", true);
   //phong.set("specular", true);
   phong.set("Kd", 1.0);
   //phong.set("Ks", 1);
-  camera(width/2, height/2, 300, width/2, height/2, 0, 0, 1, 0);
-  shader(phong);
+  //blendMode(BLEND);
+  //render.
   textureMode(NORMAL);
+  //render.
+  camera(width/2, height/2, 300, width/2, height/2, 0, 0, 1, 0);
 }
 
-void draw() {
-  background(0);
+void drawText() {
+ //resetMatrix();
+ //overlay.beginCamera();
+ //overlay.ortho(0,width,0,height);
+ overlay.textAlign(LEFT,TOP);
+ overlay.textSize(20);
+ overlay.fill(255, 255, 255, 255);
+ overlay.text(overlayStatus,0,0);
+ //overlay.endCamera();
+}
+
+void drawImagePlane() {
+  //resetMatrix();
+  //render.beginCamera();
+  //render.camera(width/2, height/2, 300, width/2, height/2, 0, 0, 1, 0);
+  //render.
+  translate(width/2, height/2);
+  phong.set("normalTexture", normalTex[selectedChar]);
+  //render.
+  shader(phong);
+  //render.
+  beginShape(QUADS);
+  //render.
+  texture(difuseTex[selectedChar]);
+  //render.
+  normal(0, 0, 1);
+  //render.
+  fill(50, 50, 200);
+  int w = int(difuseTex[selectedChar].width*scaleFactor);
+  int h = int(difuseTex[selectedChar].height*scaleFactor);
+  int w2 = w/2;
+  int h2 = h/2;
+  
+  //render.
+  vertex(-w2, +h2, 0, 1);
+  //render.
+  vertex(+w2, +h2, 1, 1);
+  //render.fill(200, 50, 50);
+  //render.
+  vertex(+w2, -h2, 1, 0);
+  //render.
+  vertex(-w2, -h2, 0, 0);
+  //render.
+  endShape(); 
+  //render.endCamera();
+}
+
+void setLight() {
   float dirY = ((mouseY / float(height)) -0.5)*2.0;
   float dirX = ((mouseX / float(width)) -0.5)*2.0;
   float phi = dirX*PI2;
@@ -47,28 +106,74 @@ void draw() {
   nx /= norm;
   ny /= norm;
   nz /= norm;
-  translate(width/2, height/2);
-  print(dirX + "," + dirY+ " " + nx + "," + ny + "," + nz +"\n");
+  //render.lights();
+  //print(dirX + "," + dirY+ " " + nx + "," + ny + "," + nz +"\n");
+  //render.
   directionalLight(255,255,255, nx, -ny, -nz);
-  
-  beginShape(QUADS);
-  texture(difuseTex[selectedChar]);
-  normal(0, 0, 1);
-  //normal(normal_img);
-  fill(50, 50, 200);
-  int w = int(difuseTex[selectedChar].width*scaleFactor);
-  int h = int(difuseTex[selectedChar].height*scaleFactor);
-  int w2 = w/2;
-  int h2 = h/2;
-  
-  vertex(-w2, +h2, 0, 1);
-  vertex(+w2, +h2, 1, 1);
-  //fill(200, 50, 50);
-  vertex(+w2, -h2, 1, 0);
-  vertex(-w2, -h2, 0, 0);
-  endShape();
-  
+}
+void drawCube() { 
+  cube.beginDraw();
+  cube.lights();
+  cube.background(0);
+  cube.noStroke();
+  cube.translate(width/2, height/2);
+  cube.rotateX(frameCount/100.0);
+  cube.rotateY(frameCount/200.0);
+  cube.box(40);
+  cube.endDraw();
+}
+void drawRender() {
+  //render.
+  //beginDraw();
+  //render.
+  //background(0,200,0,0);
+  setLight();
+  drawImagePlane();
+  //render.
+  //endDraw();
+  //image(render,0,0);
+}
+
+void drawOverlay() {
+  shader(defaultShader);
+  overlay.beginDraw();
+  overlay.background(0,0,0,0);
+  drawText();
+  overlay.endDraw();
+  image(overlay,-width/2 + 10,-height/2 + 10);
+}
+void draw() {
+  background(0);
+  drawRender();
+  drawOverlay();
+
+ 
+  //image(render,0,0);
+  //image(overlay,0,0);
+  //drawCube();
+  //image(cube, 0, 0);
   //fill(0,255,0);
   //translate(0,0,-100);
   //sphere(120);
+}
+
+
+void keyReleased() {
+  if (key == 't') {
+    useTexture = !useTexture;
+    phong.set("useTexture", useTexture);
+  }
+  if (key == 'l') {
+    useLight = !useLight;
+    phong.set("useLight", useLight);
+  }
+  if (key == 'n') {
+    useNormal = !useNormal;
+    phong.set("useNormal", useNormal);
+  }
+  
+  overlayStatus = "Character: " + selectedChar + ".\n" +
+                  "Texture: " + (useTexture ? "on" : "off") + ".\n" +
+                  "Light: " + (useLight ? "on" : "off") + ".\n" +
+                  "Normal: " + (useNormal ? "on" : "off") + ".\n";
 }

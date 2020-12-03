@@ -3,14 +3,20 @@ precision mediump float;
 precision mediump int;
 #endif
 
+// Rendering Options
 uniform bool useTexture;
 uniform bool useLight;
 uniform bool useNormal;
 uniform bool difuse;
 uniform bool specular;
-uniform float Kd;
-uniform float Ks;
+
+// Material Properties
+uniform float Ka; // Ambient Constant
+uniform float Kd; // Difuse Constant
+uniform float Ks; // Specular Constant
+
 uniform float lightIntensity;
+
 uniform sampler2D texture;
 uniform sampler2D normalTexture;
 
