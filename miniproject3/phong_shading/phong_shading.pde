@@ -1,16 +1,16 @@
 PShader defaultShader, phong;
-PImage[] difuseTex = new PImage[2];
+PImage[] diffuseTex = new PImage[2];
 PImage[] normalTex = new PImage[2];
 PImage[] specularTex = new PImage[2];
 float scaleFactor = 1;
 float PI2 = PI*0.5;
 int selectedChar = 0;
-String[] difuseTexPath = new String[2];
+String[] diffuseTexPath = new String[2];
 String[] normalTexPath = new String[2];
 String[] specularTexPath = new String[2];
 
 boolean useTexture = true, useLight = true, useNormal = true;
-boolean useAmbient = true, useDifuse = true, useSpecular = true;
+boolean useAmbient = true, useDiffuse = true, useSpecular = true;
 boolean useSpecularMapping = true;
 int oriWidth = 640, oriHeight = 360;
 String overlayStatus = "Hello";
@@ -25,11 +25,27 @@ void updateStatus() {
                   "Light: " + (useLight ? "on" : "off") + ". (L)\n" +
                   "Normal: " + (useNormal ? "on" : "off") + ". (N)\n" +
                   "Ambient: " + (useAmbient ? "on" : "off") + ". (A)\n" +
-                  "Difuse: " + (useDifuse ? "on" : "off") + ". (D)\n" +
+                  "Diffuse: " + (useDiffuse ? "on" : "off") + ". (D)\n" +
                   "Specular: " + (useSpecular ? "on" : "off") + ". (S)\n" +
                   "Specular Mapping: " + (useSpecularMapping ? "on" : "off") + ". (X)\n" +
-                  "(" + mouseX + "," + mouseY + ")" + 
+                  "Reset. (R)\n" +
+                  "(" + mouseX + "," + mouseY + ") " + 
                   "(" + width + "," + height + ")"; 
+}
+
+void reset() {
+  useTexture = useLight = useNormal = useAmbient = true;
+  useDiffuse = useSpecular = useSpecularMapping = useAmbient;
+  phong.set("useTexture", useTexture);
+  phong.set("useLight", useLight);
+  phong.set("useNormal", useNormal);
+  phong.set("useAmbient", useAmbient);
+  phong.set("useDiffuse", useDiffuse);
+  phong.set("useSpecular", useSpecular);
+  phong.set("useSpecularMapping", useSpecularMapping);
+  phong.set("Ka", 0.1);
+  phong.set("Kd", 1.0);
+  phong.set("Ks", 1.0); 
 }
 
 void setup() {
@@ -38,8 +54,8 @@ void setup() {
   overlay = createGraphics(width,height,P3D);
   cube = createGraphics(width, height, P3D);
   render.noStroke();
-  difuseTexPath[0] = "Texturas/char1_d.png";
-  difuseTexPath[1] = "Texturas/char2_d.png";
+  diffuseTexPath[0] = "Texturas/char1_d.png";
+  diffuseTexPath[1] = "Texturas/char2_d.png";
   
   normalTexPath[0] = "Texturas/char1_n.png";
   normalTexPath[1] = "Texturas/char2_n.png";
@@ -50,20 +66,11 @@ void setup() {
   phong = loadShader("PhongFrag.glsl", "PhongVert.glsl");
   defaultShader = loadShader("DefaultFrag.glsl", "DefaultVert.glsl");
   for (int i = 0; i < 2; i++) {
-    difuseTex[i] = loadImage(difuseTexPath[i]);
+    diffuseTex[i] = loadImage(diffuseTexPath[i]);
     normalTex[i] = loadImage(normalTexPath[i]);
     specularTex[i] = loadImage(specularTexPath[i]);
   }
-  phong.set("useTexture", useTexture);
-  phong.set("useLight", useLight);
-  phong.set("useNormal", useNormal);
-  phong.set("useAmbient", useAmbient);
-  phong.set("useDifuse", useDifuse);
-  phong.set("useSpecular", useSpecular);
-  phong.set("useSpecularMapping", useSpecularMapping);
-  phong.set("Ka", 0.1);
-  phong.set("Kd", 1.0);
-  phong.set("Ks", 1.0);
+  reset();
   //blendMode(BLEND);
   //render.
   textureMode(NORMAL);
@@ -96,13 +103,13 @@ void drawImagePlane() {
   //render.
   beginShape(QUADS);
   //render.
-  texture(difuseTex[selectedChar]);
+  texture(diffuseTex[selectedChar]);
   //render.
   normal(0, 0, 1);
   //render.
   fill(50, 50, 200);
-  int w = int(difuseTex[selectedChar].width*scaleFactor);
-  int h = int(difuseTex[selectedChar].height*scaleFactor);
+  int w = int(diffuseTex[selectedChar].width*scaleFactor);
+  int h = int(diffuseTex[selectedChar].height*scaleFactor);
   int w2 = w/2;
   int h2 = h/2;
   
@@ -136,7 +143,7 @@ void setLight() {
   //render.lights();
   //print(dirX + "," + dirY+ " " + nx + "," + ny + "," + nz +"\n");
   //render.
-  directionalLight(255,255,255, nx, -ny, -nz);
+  directionalLight(255,0,0, nx, -ny, -nz);
   updateStatus();
 }
 void drawCube() { 
@@ -204,8 +211,8 @@ void keyReleased() {
     phong.set("useAmbient", useAmbient);
   }
   if (key == 'd') {
-    useDifuse = !useDifuse;
-    phong.set("useDifuse", useDifuse);
+    useDiffuse = !useDiffuse;
+    phong.set("useDiffuse", useDiffuse);
   }
   if (key == 's') {
     useSpecular = !useSpecular;
@@ -217,6 +224,9 @@ void keyReleased() {
   }
   if (key == 'c') {
     selectedChar = 1-selectedChar;
+  }
+  if (key == 'r') {
+    reset();
   }
  
   updateStatus();
