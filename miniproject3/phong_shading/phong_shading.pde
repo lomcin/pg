@@ -48,7 +48,7 @@ void setup() {
   phong.set("useAmbient", useAmbient);
   phong.set("useDifuse", useDifuse);
   phong.set("useSpecular", useSpecular);
-  phong.set("Ka", 1.0);
+  phong.set("Ka", 0.1);
   phong.set("Kd", 1.0);
   phong.set("Ks", 1.0);
   //blendMode(BLEND);
