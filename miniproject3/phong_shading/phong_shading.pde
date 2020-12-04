@@ -8,7 +8,7 @@ String[] difuseTexPath = new String[2];
 String[] normalTexPath = new String[2];
 
 boolean useTexture = true, useLight = true, useNormal = true;
-boolean ambient = true, difuse = true;
+boolean useAmbient = true, useDifuse = true, useSpecular = true;
 int oriWidth = 640, oriHeight = 360;
 String overlayStatus = "Hello";
 
@@ -20,7 +20,10 @@ void updateStatus() {
  overlayStatus = "Character: " + selectedChar + ". (C)\n" +
                   "Texture: " + (useTexture ? "on" : "off") + ". (T)\n" +
                   "Light: " + (useLight ? "on" : "off") + ". (L)\n" +
-                  "Normal: " + (useNormal ? "on" : "off") + ". (N)\n"; 
+                  "Normal: " + (useNormal ? "on" : "off") + ". (N)\n" +
+                  "Ambient: " + (useAmbient ? "on" : "off") + ". (A)\n" +
+                  "Difuse: " + (useDifuse ? "on" : "off") + ". (D)\n" +
+                  "Specular: " + (useSpecular ? "on" : "off") + ". (S)\n"; 
 }
 
 void setup() {
@@ -42,10 +45,12 @@ void setup() {
   phong.set("useTexture", useTexture);
   phong.set("useLight", useLight);
   phong.set("useNormal", useNormal);
-  //phong.set("difuse", true);
-  //phong.set("specular", true);
+  phong.set("useAmbient", useAmbient);
+  phong.set("useDifuse", useDifuse);
+  phong.set("useSpecular", useSpecular);
+  phong.set("Ka", 1.0);
   phong.set("Kd", 1.0);
-  //phong.set("Ks", 1);
+  phong.set("Ks", 1.0);
   //blendMode(BLEND);
   //render.
   textureMode(NORMAL);
@@ -178,6 +183,18 @@ void keyReleased() {
   if (key == 'n') {
     useNormal = !useNormal;
     phong.set("useNormal", useNormal);
+  }
+  if (key == 'a') {
+    useAmbient = !useAmbient;
+    phong.set("useAmbient", useAmbient);
+  }
+  if (key == 'd') {
+    useDifuse = !useDifuse;
+    phong.set("useDifuse", useDifuse);
+  }
+  if (key == 's') {
+    useSpecular = !useSpecular;
+    phong.set("useSpecular", useSpecular);
   }
   if (key == 'c') {
     selectedChar = 1-selectedChar;
