@@ -68,7 +68,7 @@ void main() {
   if (useLight) {
     specularValue = iKs * pow(max(0.0, dot(reflectedSpecularDir,cameraDir)), specularPower);
     ambient = (useAmbient ? vec4(vec3(Ka * lightColor * color), color.a) : vec4(0.0));
-    diffuse = (useDiffuse ? Kd * photonIntensity * color : vec4(0.0));
+    diffuse = (useDiffuse ? Kd * photonIntensity * color * lightColor : vec4(0.0));
     specular = (useSpecular ? vec4(vec3(specularValue * lightColor), color.a) : vec4(0.0));
     gl_FragColor =  ambient + diffuse + specular;
   }

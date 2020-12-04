@@ -9,6 +9,8 @@ String[] diffuseTexPath = new String[2];
 String[] normalTexPath = new String[2];
 String[] specularTexPath = new String[2];
 
+boolean useRed = true, useGreen = true, useBlue = true;
+
 boolean useTexture = true, useLight = true, useNormal = true;
 boolean useAmbient = true, useDiffuse = true, useSpecular = true;
 boolean useSpecularMapping = true;
@@ -20,7 +22,8 @@ PGraphics cube;
 PGraphics render, overlay;
 
 void updateStatus() {
- overlayStatus = "Character: " + selectedChar + ". (C)\n" +
+ overlayStatus =  "Change light active RGB. (1,2,3)\n" +
+                  "Character: " + selectedChar + ". (C)\n" +
                   "Texture: " + (useTexture ? "on" : "off") + ". (T)\n" +
                   "Light: " + (useLight ? "on" : "off") + ". (L)\n" +
                   "Normal: " + (useNormal ? "on" : "off") + ". (N)\n" +
@@ -36,6 +39,7 @@ void updateStatus() {
 void reset() {
   useTexture = useLight = useNormal = useAmbient = true;
   useDiffuse = useSpecular = useSpecularMapping = useAmbient;
+  useRed = useGreen = useBlue = true;
   phong.set("useTexture", useTexture);
   phong.set("useLight", useLight);
   phong.set("useNormal", useNormal);
@@ -143,7 +147,10 @@ void setLight() {
   //render.lights();
   //print(dirX + "," + dirY+ " " + nx + "," + ny + "," + nz +"\n");
   //render.
-  directionalLight(255,0,0, nx, -ny, -nz);
+  directionalLight((useRed ? 255 : 0),
+                   (useGreen ? 255 : 0),
+                   (useBlue ? 255 : 0),
+                   nx, -ny, -nz);
   updateStatus();
 }
 void drawCube() { 
@@ -227,6 +234,17 @@ void keyReleased() {
   }
   if (key == 'r') {
     reset();
+  }
+  
+  // Color parameters
+  if (key == '1') {
+    useRed = !useRed;
+  }
+  if (key == '2') {
+    useGreen = !useGreen;
+  }
+  if (key == '3') {
+    useBlue = !useBlue;
   }
  
   updateStatus();
