@@ -10,6 +10,7 @@ uniform bool useNormal;
 uniform bool useAmbient;
 uniform bool useDifuse;
 uniform bool useSpecular;
+uniform bool useSpecularMapping;
 
 // Material Properties
 uniform float Ka; // Ambient Constant
@@ -22,6 +23,7 @@ uniform vec4 lightColor = vec4(1);
 
 uniform sampler2D texture;
 uniform sampler2D normalTexture;
+uniform sampler2D specularTexture;
 
 uniform mat3 normalMatrix;
 uniform vec3 cameraDir = vec3(0,0,1);
@@ -36,7 +38,7 @@ void main() {
   vec4 photonIntensity;
   vec3 normal = vertNormal;
   float cosTheta;
-  float specularValue;
+  float specularValue, iKs;
   vec4 specular, ambient, difuse;
   vec3 reflectedSpecularDir;
   // if (int(vertTexCoord.s*200)%2 == 0 || int(vertColor.t*200)%2 == 0) {
@@ -46,6 +48,11 @@ void main() {
   if (useNormal) {
     normal = normalize(texture2D(normalTexture, vertTexCoord.st).rgb);
     // normal = normalize(normalMatrix * normal);
+  }
+  if (useSpecularMapping) {
+    iKs = texture2D(specularTexture,vertTexCoord.st).g; // Getting Red component since all components are equal
+  } else {
+    iKs = Ks;
   }
   if (useLight) {
     cosTheta = max(0.0, dot(vertLightDir, normal));
@@ -59,10 +66,10 @@ void main() {
   }
   gl_FragColor = color;
   if (useLight) {
-    specularValue = pow(max(0.0, dot(reflectedSpecularDir,cameraDir)), specularPower);
-    ambient = (useAmbient ? vec4(vec3(Ka * lightColor * color), difuse.a) : vec4(0.0));
+    specularValue = iKs * pow(max(0.0, dot(reflectedSpecularDir,cameraDir)), specularPower);
+    ambient = (useAmbient ? vec4(vec3(Ka * lightColor * color), color.a) : vec4(0.0));
     difuse = (useDifuse ? Kd * photonIntensity * color : vec4(0.0));
-    specular = (useSpecular ? vec4(vec3(Ks * specularValue * lightColor), difuse.a) : vec4(0.0));
+    specular = (useSpecular ? vec4(vec3(specularValue * lightColor), color.a) : vec4(0.0));
     gl_FragColor =  ambient + difuse + specular;
   }
 }

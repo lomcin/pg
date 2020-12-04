@@ -1,14 +1,17 @@
 PShader defaultShader, phong;
 PImage[] difuseTex = new PImage[2];
 PImage[] normalTex = new PImage[2];
+PImage[] specularTex = new PImage[2];
 float scaleFactor = 1;
 float PI2 = PI*0.5;
 int selectedChar = 0;
 String[] difuseTexPath = new String[2];
 String[] normalTexPath = new String[2];
+String[] specularTexPath = new String[2];
 
 boolean useTexture = true, useLight = true, useNormal = true;
 boolean useAmbient = true, useDifuse = true, useSpecular = true;
+boolean useSpecularMapping = true;
 int oriWidth = 640, oriHeight = 360;
 String overlayStatus = "Hello";
 
@@ -23,7 +26,10 @@ void updateStatus() {
                   "Normal: " + (useNormal ? "on" : "off") + ". (N)\n" +
                   "Ambient: " + (useAmbient ? "on" : "off") + ". (A)\n" +
                   "Difuse: " + (useDifuse ? "on" : "off") + ". (D)\n" +
-                  "Specular: " + (useSpecular ? "on" : "off") + ". (S)\n"; 
+                  "Specular: " + (useSpecular ? "on" : "off") + ". (S)\n" +
+                  "Specular Mapping: " + (useSpecularMapping ? "on" : "off") + ". (X)\n" +
+                  "(" + mouseX + "," + mouseY + ")" + 
+                  "(" + width + "," + height + ")"; 
 }
 
 void setup() {
@@ -34,13 +40,19 @@ void setup() {
   render.noStroke();
   difuseTexPath[0] = "Texturas/char1_d.png";
   difuseTexPath[1] = "Texturas/char2_d.png";
+  
   normalTexPath[0] = "Texturas/char1_n.png";
   normalTexPath[1] = "Texturas/char2_n.png";
+
+  specularTexPath[0] = "Texturas/char1_s.png";
+  specularTexPath[1] = "Texturas/char2_s.png";
+  
   phong = loadShader("PhongFrag.glsl", "PhongVert.glsl");
   defaultShader = loadShader("DefaultFrag.glsl", "DefaultVert.glsl");
   for (int i = 0; i < 2; i++) {
     difuseTex[i] = loadImage(difuseTexPath[i]);
     normalTex[i] = loadImage(normalTexPath[i]);
+    specularTex[i] = loadImage(specularTexPath[i]);
   }
   phong.set("useTexture", useTexture);
   phong.set("useLight", useLight);
@@ -48,6 +60,7 @@ void setup() {
   phong.set("useAmbient", useAmbient);
   phong.set("useDifuse", useDifuse);
   phong.set("useSpecular", useSpecular);
+  phong.set("useSpecularMapping", useSpecularMapping);
   phong.set("Ka", 0.1);
   phong.set("Kd", 1.0);
   phong.set("Ks", 1.0);
@@ -77,6 +90,7 @@ void drawImagePlane() {
   //render.
   translate(width/2, height/2);
   phong.set("normalTexture", normalTex[selectedChar]);
+  phong.set("specularTexture", specularTex[selectedChar]);
   //render.
   shader(phong);
   //render.
@@ -123,6 +137,7 @@ void setLight() {
   //print(dirX + "," + dirY+ " " + nx + "," + ny + "," + nz +"\n");
   //render.
   directionalLight(255,255,255, nx, -ny, -nz);
+  updateStatus();
 }
 void drawCube() { 
   cube.beginDraw();
@@ -195,6 +210,10 @@ void keyReleased() {
   if (key == 's') {
     useSpecular = !useSpecular;
     phong.set("useSpecular", useSpecular);
+  }
+  if (key == 'x') {
+    useSpecularMapping = !useSpecularMapping;
+    phong.set("useSpecularMapping", useSpecularMapping);
   }
   if (key == 'c') {
     selectedChar = 1-selectedChar;
