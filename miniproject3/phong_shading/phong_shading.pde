@@ -10,19 +10,35 @@ String[] normalTexPath = new String[2];
 String[] specularTexPath = new String[2];
 
 boolean useRed = true, useGreen = true, useBlue = true;
+boolean useFastLight = true;
+boolean isUpActive = false, isDownActive = false;
+int selectedLightChannel = -1;
+int[] lightColor = new int[3];
 
 boolean useTexture = true, useLight = true, useNormal = true;
 boolean useAmbient = true, useDiffuse = true, useSpecular = true;
 boolean useSpecularMapping = true;
 int oriWidth = 640, oriHeight = 360;
 String overlayStatus = "Hello";
+int msDelay = 100;
+int lastAcceptedKeyMillis = 0, countMillis = 0;
 
 PGraphics cube;
 
 PGraphics render, overlay;
 
 void updateStatus() {
- overlayStatus =  "Change light active RGB. (1,2,3)\n" +
+ overlayStatus =  "Fast light mode: " + (useFastLight ? "on" : "off") + ". (F)\n" +
+                  (useFastLight ? "Change light active RGB. (1,2,3)\n" :
+                   "Select light RGB component. (1,2,3)\n" +
+                   "  Use Left and Right arrows to choose different channels.\n" +
+                   "  Use Up and Down arrows to change values: (" 
+                   + (selectedLightChannel == 0 ? ">" + lightColor[0] + "<" : lightColor[0])
+                   + "," 
+                   + (selectedLightChannel == 1 ? ">" + lightColor[1] + "<" : lightColor[1]) 
+                   + ","
+                   + (selectedLightChannel == 2 ? ">" + lightColor[2] + "<" : lightColor[2])
+                   + ").\n") +
                   "Character: " + selectedChar + ". (C)\n" +
                   "Texture: " + (useTexture ? "on" : "off") + ". (T)\n" +
                   "Light: " + (useLight ? "on" : "off") + ". (L)\n" +
@@ -39,7 +55,9 @@ void updateStatus() {
 void reset() {
   useTexture = useLight = useNormal = useAmbient = true;
   useDiffuse = useSpecular = useSpecularMapping = useAmbient;
-  useRed = useGreen = useBlue = true;
+  useRed = useGreen = useBlue = useFastLight = true;
+  lightColor[0] = lightColor[1] = lightColor[2] = 255;
+  selectedLightChannel = -1;
   phong.set("useTexture", useTexture);
   phong.set("useLight", useLight);
   phong.set("useNormal", useNormal);
@@ -55,7 +73,7 @@ void reset() {
 void setup() {
   size(640, 360, P3D);
   render = createGraphics(width,height,P3D);
-  overlay = createGraphics(width,height,P3D);
+  overlay = createGraphics(width,height+100,P3D);
   cube = createGraphics(width, height, P3D);
   render.noStroke();
   diffuseTexPath[0] = "Texturas/char1_d.png";
@@ -147,10 +165,17 @@ void setLight() {
   //render.lights();
   //print(dirX + "," + dirY+ " " + nx + "," + ny + "," + nz +"\n");
   //render.
-  directionalLight((useRed ? 255 : 0),
-                   (useGreen ? 255 : 0),
-                   (useBlue ? 255 : 0),
-                   nx, -ny, -nz);
+  if (useFastLight) {
+    directionalLight((useRed ? 255 : 0),
+                     (useGreen ? 255 : 0),
+                     (useBlue ? 255 : 0),
+                     nx, -ny, -nz);
+  } else {
+    directionalLight(lightColor[0],
+                     lightColor[1],
+                     lightColor[2],
+                     nx, -ny, -nz); 
+  }
   updateStatus();
 }
 void drawCube() { 
@@ -184,12 +209,25 @@ void drawOverlay() {
   overlay.endDraw();
   image(overlay,-width/2 + 10,-height/2 + 10);
 }
+
+void updateColorLevel(int value) {
+  if (lastAcceptedKeyMillis + (msDelay*(5/(pow(2,1+countMillis)))) > millis()) {
+    return;
+  }
+  lastAcceptedKeyMillis = millis();
+  countMillis++;
+  if (selectedLightChannel > -1 && selectedLightChannel < 3) {
+    lightColor[selectedLightChannel] = min(255,max(0,
+              lightColor[selectedLightChannel] + value));
+  }
+}
+
 void draw() {
   background(0);
   drawRender();
   drawOverlay();
-
- 
+  if (isUpActive) updateColorLevel(1);
+  if (isDownActive) updateColorLevel(-1);
   //image(render,0,0);
   //image(overlay,0,0);
   //drawCube();
@@ -235,17 +273,58 @@ void keyReleased() {
   if (key == 'r') {
     reset();
   }
+  if (key == 'f') {
+    useFastLight = !useFastLight;
+  }
   
   // Color parameters
-  if (key == '1') {
-    useRed = !useRed;
-  }
-  if (key == '2') {
-    useGreen = !useGreen;
-  }
-  if (key == '3') {
-    useBlue = !useBlue;
+  if (useFastLight) {
+    if (key == '1') {
+      useRed = !useRed;
+    }
+    if (key == '2') {
+      useGreen = !useGreen;
+    }
+    if (key == '3') {
+      useBlue = !useBlue;
+    }
+  } else {
+    if (key == '1') {
+      selectedLightChannel = (selectedLightChannel == 0 ? -1 : 0);
+    }
+    if (key == '2') {
+      selectedLightChannel = (selectedLightChannel == 1 ? -1 : 1);
+    }
+    if (key == '3') {
+      selectedLightChannel = (selectedLightChannel == 2 ? -1 : 2);
+    }
+    if (keyCode == UP) {
+      isUpActive = false;
+      countMillis = 0;
+    }
+    if (keyCode == DOWN) {
+      isDownActive = false;
+      countMillis = 0;
+    }
+    if (keyCode == LEFT) {
+      if (selectedLightChannel > -1)
+      selectedLightChannel = min(2,max(0,selectedLightChannel-1));
+    }
+    if (keyCode == RIGHT) {
+      if (selectedLightChannel > -1)
+      selectedLightChannel = min(2,max(0,selectedLightChannel+1));
+    } 
   }
  
   updateStatus();
+}
+
+void keyPressed() {
+ if (!useFastLight) {
+  if (keyCode == UP) {
+    isUpActive = true;
+  } else if (keyCode == DOWN) {
+    isDownActive = true;
+  } 
+ }
 }
