@@ -1,3 +1,5 @@
+// Author: Lucas Oliveira Maggi (lom@cin.ufpe.br)
+
 PShader defaultShader, phong;
 PImage[] diffuseTex = new PImage[2];
 PImage[] normalTex = new PImage[2];
@@ -8,18 +10,22 @@ int selectedChar = 0;
 String[] diffuseTexPath = new String[2];
 String[] normalTexPath = new String[2];
 String[] specularTexPath = new String[2];
+String[] fastLightStateName = new String[3];
 
 boolean useRed = true, useGreen = true, useBlue = true;
 boolean useFastLight = true;
 boolean isUpActive = false, isDownActive = false;
 int selectedLightChannel = -1;
 int[] lightColor = new int[3];
+int[] ambientLightColor = new int[4];
+float[] ambientLightColorFloat = new float[4];
 
 boolean useTexture = true, useLight = true, useNormal = true;
 boolean useAmbient = true, useDiffuse = true, useSpecular = true;
 boolean useSpecularMapping = true;
 int oriWidth = 640, oriHeight = 360;
-String overlayStatus = "Hello";
+String overlayStatus = "Hello", selectedLightColor;
+int fastLightState = 0;
 int msDelay = 100;
 int lastAcceptedKeyMillis = 0, countMillis = 0;
 
@@ -28,16 +34,32 @@ PGraphics cube;
 PGraphics render, overlay;
 
 void updateStatus() {
- overlayStatus =  "Fast light mode: " + (useFastLight ? "on" : "off") + ". (F)\n" +
-                  (useFastLight ? "Change light active RGB. (1,2,3)\n" :
+  switch (fastLightState) {
+    case 0:
+      selectedLightColor = "";
+      break;
+    case 1:
+      selectedLightColor = (selectedLightChannel == 0 ? ">" + lightColor[0] + "<" : lightColor[0])
+                         + "," 
+                         + (selectedLightChannel == 1 ? ">" + lightColor[1] + "<" : lightColor[1]) 
+                         + ","
+                         + (selectedLightChannel == 2 ? ">" + lightColor[2] + "<" : lightColor[2]);
+      break;
+    case 2:
+      selectedLightColor = (selectedLightChannel == 0 ? ">" + ambientLightColor[0] + "<" : ambientLightColor[0])
+                         + "," 
+                         + (selectedLightChannel == 1 ? ">" + ambientLightColor[1] + "<" : ambientLightColor[1]) 
+                         + ","
+                         + (selectedLightChannel == 2 ? ">" + ambientLightColor[2] + "<" : ambientLightColor[2]);
+      break;
+          
+ }
+ overlayStatus =  "Fast light mode (Easy, Manual, Ambient): " + fastLightStateName[fastLightState] + ". (F)\n" +
+                  (fastLightState == 0 ? "Change light active RGB. (1,2,3)\n" :
                    "Select light RGB component. (1,2,3)\n" +
                    "  Use Left and Right arrows to choose different channels.\n" +
                    "  Use Up and Down arrows to change values: (" 
-                   + (selectedLightChannel == 0 ? ">" + lightColor[0] + "<" : lightColor[0])
-                   + "," 
-                   + (selectedLightChannel == 1 ? ">" + lightColor[1] + "<" : lightColor[1]) 
-                   + ","
-                   + (selectedLightChannel == 2 ? ">" + lightColor[2] + "<" : lightColor[2])
+                   + selectedLightColor
                    + ").\n") +
                   "Character: " + selectedChar + ". (C)\n" +
                   "Texture: " + (useTexture ? "on" : "off") + ". (T)\n" +
@@ -57,6 +79,11 @@ void reset() {
   useDiffuse = useSpecular = useSpecularMapping = useAmbient;
   useRed = useGreen = useBlue = useFastLight = true;
   lightColor[0] = lightColor[1] = lightColor[2] = 255;
+  ambientLightColor[0] = ambientLightColor[1] = ambientLightColor[2] = ambientLightColor[3] = 255;
+  ambientLightColorFloat[0] = ambientLightColorFloat[1] = ambientLightColorFloat[2] = ambientLightColorFloat[3] = 1.0;
+  fastLightStateName[0] = "Easy RGB";
+  fastLightStateName[1] = "Manual RGB";
+  fastLightStateName[2] = "Ambient manual RGB";
   selectedLightChannel = -1;
   phong.set("useTexture", useTexture);
   phong.set("useLight", useLight);
@@ -67,7 +94,8 @@ void reset() {
   phong.set("useSpecularMapping", useSpecularMapping);
   phong.set("Ka", 0.1);
   phong.set("Kd", 1.0);
-  phong.set("Ks", 1.0); 
+  phong.set("Ks", 1.0);
+  phong.set("ambientLightColor", ambientLightColorFloat, 4);
 }
 
 void setup() {
@@ -93,60 +121,45 @@ void setup() {
     specularTex[i] = loadImage(specularTexPath[i]);
   }
   reset();
-  //blendMode(BLEND);
-  //render.
   textureMode(NORMAL);
-  //render.
   camera(width/2, height/2, 300, width/2, height/2, 0, 0, 1, 0);
   updateStatus();
 }
 
 void drawText() {
- //resetMatrix();
- //overlay.beginCamera();
- //overlay.ortho(0,width,0,height);
  overlay.textAlign(LEFT,TOP);
  overlay.textSize(20);
  overlay.fill(255, 255, 255, 255);
  overlay.text(overlayStatus,0,0);
- //overlay.endCamera();
+}
+
+void updateAmbientLightColorFloat() {
+  for (int i = 0; i < 4; i++) {
+    ambientLightColorFloat[i] = ambientLightColor[i]/255.0;
+  }
 }
 
 void drawImagePlane() {
-  //resetMatrix();
-  //render.beginCamera();
-  //render.camera(width/2, height/2, 300, width/2, height/2, 0, 0, 1, 0);
-  //render.
   translate(width/2, height/2);
   phong.set("normalTexture", normalTex[selectedChar]);
   phong.set("specularTexture", specularTex[selectedChar]);
-  //render.
+  updateAmbientLightColorFloat();
+  phong.set("ambientLightColor", ambientLightColorFloat, 4);
   shader(phong);
-  //render.
   beginShape(QUADS);
-  //render.
   texture(diffuseTex[selectedChar]);
-  //render.
   normal(0, 0, 1);
-  //render.
   fill(50, 50, 200);
   int w = int(diffuseTex[selectedChar].width*scaleFactor);
   int h = int(diffuseTex[selectedChar].height*scaleFactor);
   int w2 = w/2;
   int h2 = h/2;
   
-  //render.
   vertex(-w2, +h2, 0, 1);
-  //render.
   vertex(+w2, +h2, 1, 1);
-  //render.fill(200, 50, 50);
-  //render.
   vertex(+w2, -h2, 1, 0);
-  //render.
   vertex(-w2, -h2, 0, 0);
-  //render.
-  endShape(); 
-  //render.endCamera();
+  endShape();
 }
 
 void setLight() {
@@ -154,7 +167,6 @@ void setLight() {
   float dirX = ((mouseX / float(width)) -0.5)*2.0;
   float phi = dirX*PI2;
   float theta = dirY*PI2;
-  //print(dirX + "," + dirY+ "\n");
   float nx = dirX;
   float ny = dirY;
   float nz = cos(phi)*cos(theta);
@@ -162,15 +174,12 @@ void setLight() {
   nx /= norm;
   ny /= norm;
   nz /= norm;
-  //render.lights();
-  //print(dirX + "," + dirY+ " " + nx + "," + ny + "," + nz +"\n");
-  //render.
-  if (useFastLight) {
+  if (fastLightState == 0) {
     directionalLight((useRed ? 255 : 0),
                      (useGreen ? 255 : 0),
                      (useBlue ? 255 : 0),
                      nx, -ny, -nz);
-  } else {
+  } else if (fastLightState > 0) {
     directionalLight(lightColor[0],
                      lightColor[1],
                      lightColor[2],
@@ -178,27 +187,10 @@ void setLight() {
   }
   updateStatus();
 }
-void drawCube() { 
-  cube.beginDraw();
-  cube.lights();
-  cube.background(0);
-  cube.noStroke();
-  cube.translate(width/2, height/2);
-  cube.rotateX(frameCount/100.0);
-  cube.rotateY(frameCount/200.0);
-  cube.box(40);
-  cube.endDraw();
-}
+
 void drawRender() {
-  //render.
-  //beginDraw();
-  //render.
-  //background(0,200,0,0);
   setLight();
   drawImagePlane();
-  //render.
-  //endDraw();
-  //image(render,0,0);
 }
 
 void drawOverlay() {
@@ -217,8 +209,13 @@ void updateColorLevel(int value) {
   lastAcceptedKeyMillis = millis();
   countMillis++;
   if (selectedLightChannel > -1 && selectedLightChannel < 3) {
-    lightColor[selectedLightChannel] = min(255,max(0,
+    if (fastLightState == 1) {
+      lightColor[selectedLightChannel] = min(255,max(0,
               lightColor[selectedLightChannel] + value));
+    } else if (fastLightState == 2) {
+      ambientLightColor[selectedLightChannel] = min(255,max(0,
+              ambientLightColor[selectedLightChannel] + value));
+    }
   }
 }
 
@@ -274,11 +271,11 @@ void keyReleased() {
     reset();
   }
   if (key == 'f') {
-    useFastLight = !useFastLight;
+    fastLightState = (fastLightState+1)%3;
   }
   
   // Color parameters
-  if (useFastLight) {
+  if (fastLightState == 0) {
     if (key == '1') {
       useRed = !useRed;
     }
@@ -320,7 +317,7 @@ void keyReleased() {
 }
 
 void keyPressed() {
- if (!useFastLight) {
+ if (fastLightState > 0) {
   if (keyCode == UP) {
     isUpActive = true;
   } else if (keyCode == DOWN) {

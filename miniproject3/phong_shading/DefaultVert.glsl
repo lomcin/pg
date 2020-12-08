@@ -1,3 +1,5 @@
+// Author: Lucas Oliveira Maggi (lom@cin.ufpe.br)
+
 uniform mat4 transform;
 uniform mat3 normalMatrix;
 uniform mat4 texMatrix;
