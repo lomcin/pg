@@ -13,9 +13,13 @@ var flatShader = new FlatShader(gl);
 var program = new Program(gl, flatShader);
 
 var vertices = new Float32Array([
-    -0.5, -0.5,
-    0.5,-0.5,
-    0.0,0.5
+    -1, -1,
+    -1, 1,
+    1, 1,
+
+    1, 1,
+    1, -1,
+    -1, -1
 ])
 
 var buffer = gl.createBuffer()
@@ -26,12 +30,14 @@ program.use();
 program.setUniform4fv('color', [0, 1, 0, 1])
 program.enable2DVertexAttrib('position')
 var mouseX = 400;
+var mouseY = 400;
 function draw() {
 
-    gl.clearColor(1,0,1,1)
+    gl.clearColor(0,0,0,1)
     gl.clear(gl.COLOR_BUFFER_BIT)
 
-    program.setUniform1i('mouseX', mouseX)
+    program.setUniform2iv('mouse', [mouseX,canvas.height-mouseY])
+    program.setUniform2iv('viewPortSize', [canvas.width,canvas.height])
     gl.drawArrays(gl.TRIANGLES, 0, vertices.length/2)
     
     gl.finish();
@@ -43,4 +49,6 @@ draw();
 
 document.onmousemove = (e) => {
     mouseX = e.clientX;
+    mouseY = e.clientY;
 };
+document.getElementsByTagName('body')[0].style.cursor = "none";

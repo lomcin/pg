@@ -24,6 +24,10 @@ class Program {
         var variable = this.gl.getUniformLocation(this.program, varname)
         this.gl.uniform1i(variable, value)
     }
+    setUniform2iv(varname, value) {
+        var variable = this.gl.getUniformLocation(this.program, varname)
+        this.gl.uniform2iv(variable, value)
+    }
     enable2DVertexAttrib(varname) {
         var variable = this.gl.getAttribLocation(this.program, varname)
         this.gl.enableVertexAttribArray(variable)

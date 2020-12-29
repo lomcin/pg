@@ -11,13 +11,13 @@ class FlatShader extends Shader {
         var fragment = `
             precision highp float;
             uniform vec4 color;
-            uniform int mouseX;
+            uniform ivec2 mouse;
+            uniform ivec2 viewPortSize;
             void main() {
-                if (int(gl_FragCoord.x) < mouseX) {
-                    gl_FragColor = color;
-                } else {
-                    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-                }
+                float dis = distance(vec2(mouse),gl_FragCoord.xy);
+                float relative = dis/float(viewPortSize.y)*2.0;
+                float alpha = 1.0-relative;
+                gl_FragColor = vec4(vec3(color)*alpha, 1);
             }
         `;
 
