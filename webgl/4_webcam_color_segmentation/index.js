@@ -11,6 +11,14 @@ window.addEventListener('resize',(e) => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 });
+var filterGrayThreshold = 0;
+window.addEventListener('wheel',(e) => {
+    if (e.deltaY < 0) {
+        filterGrayThreshold = Math.min(filterGrayThreshold+1,255);
+    } else if (e.deltaY > 0) {
+        filterGrayThreshold = Math.max(filterGrayThreshold-1,0);
+    }
+});
 
 var webcamReady = false;
 
@@ -45,6 +53,7 @@ program.enable2DVertexAttrib('a_position')
 
 var positionLoc = gl.getAttribLocation(program.getProgram(), "a_position");
 var projMatrixLoc = gl.getUniformLocation(program.getProgram(), "u_projMatrix");
+var filterGrayThresholdLoc = gl.getUniformLocation(program.getProgram(), "u_filterGrayThreshold");
 
 var texcoordLocation = gl.getAttribLocation(program.getProgram(), "a_texcoord");
 var texCoord = new Float32Array([
@@ -71,6 +80,7 @@ var projMatrix = new Float32Array([
     0, 0, 0, 1
 ])
 gl.uniformMatrix4fv(projMatrixLoc, false, projMatrix);
+gl.uniform1f(filterGrayThresholdLoc, filterGrayThreshold/255.0);
 
 var bliss_image = new Image();
 bliss_image.crossOrigin = "anonymous";   // ask for CORS permission
@@ -95,7 +105,8 @@ function draw() {
     ])
 
     gl.uniformMatrix4fv(projMatrixLoc, false, projMatrix);
-
+    gl.uniform1f(filterGrayThresholdLoc, filterGrayThreshold/255.0);
+    
     if (webcamReady) {
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,gl.UNSIGNED_BYTE, video);

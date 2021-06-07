@@ -6,6 +6,7 @@ class MaggicSegmentationShader extends Shader {
             attribute vec2 a_texcoord;
             
             uniform mat4 u_projMatrix;
+            uniform float u_filterGrayThreshold;
             
             varying vec2 v_texcoord;
             
@@ -24,6 +25,7 @@ class MaggicSegmentationShader extends Shader {
     
             // Passed in from the vertex shader.
             varying vec2 v_texcoord;
+            uniform float u_filterGrayThreshold;
             
             // The texture.
             uniform sampler2D u_texture;
@@ -85,9 +87,26 @@ class MaggicSegmentationShader extends Shader {
 
                 return rgb + vec3(m,m,m);
             }
+
+            vec3 filterGray(vec3 a) {
+                float men = min(min(a.x,a.y),a.z);
+                float lower_bound = max(men - u_filterGrayThreshold, 0.0);
+                float upper_bound = min(men + u_filterGrayThreshold, 1.0);
+                vec3 color = vec3(0.0,0.0,0.0);
+                if (a.x > lower_bound && a.x <= upper_bound &&
+                    a.y > lower_bound && a.y <= upper_bound &&
+                    a.z > lower_bound && a.z <= upper_bound) {
+                    color = vec3(0.0,0.0,0.0);
+                } else {
+                    color = a;
+                }
+                return color;
+            }
             
             void main() {
-                vec3 rgbColor = hsv2rgb(rgb2hsv(texture2D(u_texture, v_texcoord).rgb));
+                // vec3 rgbColor = hsv2rgb(rgb2hsv(texture2D(u_texture, v_texcoord).rgb));
+                // vec3 rgbColor = texture2D(u_texture, v_texcoord).rgb;
+                vec3 rgbColor = filterGray(texture2D(u_texture, v_texcoord).rgb);
                 // int redi = int(rgbColor.x*255.0)/32*32;
                 // int greeni = int(rgbColor.y*255.0)/32*32;
                 // int bluei = int(rgbColor.z*255.0)/32*32;
