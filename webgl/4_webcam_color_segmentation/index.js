@@ -23,8 +23,8 @@ video.autoplay = true;
 var gl = canvas.getContext('webgl')
 
 var texShader = new TexShader(gl);
-var colorPrecisionShader = new ColorPrecisionShader(gl);
-var program = new Program(gl, colorPrecisionShader);
+var theShader = new MaggicSegmentationShader(gl);
+var program = new Program(gl, theShader);
 
 var vertices = new Float32Array([
     -1, -1,
