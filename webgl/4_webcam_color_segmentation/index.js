@@ -34,6 +34,8 @@ var texShader = new TexShader(gl);
 var theShader = new MaggicSegmentationShader(gl);
 var program = new Program(gl, theShader);
 
+console.log(program.getShaderInfoLog());
+
 var vertices = new Float32Array([
     -1, -1,
     -1, 1,
@@ -54,6 +56,8 @@ program.enable2DVertexAttrib('a_position')
 var positionLoc = gl.getAttribLocation(program.getProgram(), "a_position");
 var projMatrixLoc = gl.getUniformLocation(program.getProgram(), "u_projMatrix");
 var filterGrayThresholdLoc = gl.getUniformLocation(program.getProgram(), "u_filterGrayThreshold");
+var hueVectorLoc = gl.getUniformLocation(program.getProgram(), "u_hueVector");
+var colorVectorLoc = gl.getUniformLocation(program.getProgram(), "u_colorVector");
 
 var texcoordLocation = gl.getAttribLocation(program.getProgram(), "a_texcoord");
 var texCoord = new Float32Array([
@@ -79,8 +83,34 @@ var projMatrix = new Float32Array([
     0, 0, 1, 0,
     0, 0, 0, 1
 ])
+
 gl.uniformMatrix4fv(projMatrixLoc, false, projMatrix);
 gl.uniform1f(filterGrayThresholdLoc, filterGrayThreshold/255.0);
+var hueVectorFrom255 = new Float32Array([
+    255, // Red = -1
+    7, // Orange
+    43, // Yellow
+    97, // Green
+    140, // Cyan
+    151, // Blue
+    235 //Magenta
+]);
+var hueVector = new Float32Array(7);
+for (let i = 0; i < 7; i++){
+    hueVector[i] = hueVectorFrom255[i]/255.0;
+}
+gl.uniform1fv(hueVectorLoc, hueVector);
+
+var colorVector = new Float32Array([
+    1, 0, 0, // Red = -1
+    1, 0.5, 0, // Orange
+    1, 1, 0, // Yellow
+    0, 1, 0, // Green
+    0, 1, 1, // Cyan
+    0, 0, 1, // Blue
+    1, 0, 1 //Magenta
+]);
+gl.uniform3fv(colorVectorLoc, colorVector);
 
 var bliss_image = new Image();
 bliss_image.crossOrigin = "anonymous";   // ask for CORS permission
@@ -106,6 +136,9 @@ function draw() {
 
     gl.uniformMatrix4fv(projMatrixLoc, false, projMatrix);
     gl.uniform1f(filterGrayThresholdLoc, filterGrayThreshold/255.0);
+    gl.uniform1fv(hueVectorLoc, hueVector);
+    gl.uniform3fv(colorVectorLoc, colorVector);
+
     
     if (webcamReady) {
         gl.bindTexture(gl.TEXTURE_2D, texture);

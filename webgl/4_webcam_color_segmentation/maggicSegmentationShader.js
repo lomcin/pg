@@ -7,6 +7,8 @@ class MaggicSegmentationShader extends Shader {
             
             uniform mat4 u_projMatrix;
             uniform float u_filterGrayThreshold;
+            uniform float u_hueVector[7];
+            uniform vec3 u_colorVector[7];
             
             varying vec2 v_texcoord;
             
@@ -21,11 +23,13 @@ class MaggicSegmentationShader extends Shader {
         `;
 
         var fragment = `
-            precision mediump float;
+            precision highp float;
     
             // Passed in from the vertex shader.
             varying vec2 v_texcoord;
             uniform float u_filterGrayThreshold;
+            uniform float u_hueVector[7];
+            uniform vec3 u_colorVector[7];
             
             // The texture.
             uniform sampler2D u_texture;
@@ -102,19 +106,52 @@ class MaggicSegmentationShader extends Shader {
                 }
                 return color;
             }
+
+            int getColorCodeFromHue(float hue) {
+                float dist = 1000.0;
+                int selected = 0;
+                for (int i = 0; i < 7; i++) {
+                    // float absd = min(abs(hue-u_hueVector[i]),abs(mod(hue-u_hueVector[i]+1.0,1.0)));
+                    float absd = abs(hue-u_hueVector[i]);
+                    if (absd < dist) {
+                        dist = absd;
+                        selected = i;
+                    }
+                }
+                return selected;
+            }
             
             void main() {
-                // vec3 rgbColor = hsv2rgb(rgb2hsv(texture2D(u_texture, v_texcoord).rgb));
-                // vec3 rgbColor = texture2D(u_texture, v_texcoord).rgb;
-                vec3 rgbColor = filterGray(texture2D(u_texture, v_texcoord).rgb);
-                // int redi = int(rgbColor.x*255.0)/32*32;
-                // int greeni = int(rgbColor.y*255.0)/32*32;
-                // int bluei = int(rgbColor.z*255.0)/32*32;
-                // float red = float(redi)/255.0;
-                // float green = float(greeni)/255.0;
-                // float blue = float(bluei)/255.0;
+                vec3 rgbColor = texture2D(u_texture, v_texcoord).rgb;
+                vec3 rgbFiltered = filterGray(rgbColor);
+                // vec3 rgbFinal = vec3(0.0,0.0,0.0);
+                vec3 rgbFinal = rgbFiltered;
+                vec3 hsvColor;
+                int colorCode = 0;
+                if (rgbFiltered.r == 0.0 && rgbFiltered.g == 0.0 && rgbFiltered.b == 0.0) {
+
+                } else {
+                    hsvColor = rgb2hsv(rgbFiltered);
+                    colorCode = getColorCodeFromHue(hsvColor.x);
+                    if (colorCode == 0) {
+                        rgbFinal = u_colorVector[0];
+                    } else if (colorCode == 1) {
+                        rgbFinal = u_colorVector[1];
+                    } else if (colorCode == 2) {
+                        rgbFinal = u_colorVector[2];
+                    } else if (colorCode == 3) {
+                        rgbFinal = u_colorVector[3];
+                    } else if (colorCode == 4) {
+                        rgbFinal = u_colorVector[4];
+                    } else if (colorCode == 5) {
+                        rgbFinal = u_colorVector[5];
+                    } else if (colorCode == 6) {
+                        rgbFinal = u_colorVector[6];
+                    }
+                    // rgbFinal = vec3(1,1,1);
+                }
                 // gl_FragColor = vec4(red, green, blue, 1.0);
-                gl_FragColor = vec4(rgbColor,1.0);
+                gl_FragColor = vec4(rgbFinal,1.0);
             }
         `;
 

@@ -13,6 +13,11 @@ class Program {
     getProgram() {
         return this.program;
     }
+    getShaderInfoLog() {
+        var vtxmsg = this.gl.getShaderInfoLog(this.shader.getVertexShader());
+        var fragmsg = this.gl.getShaderInfoLog(this.shader.getFragmentShader());
+        return vtxmsg + fragmsg;
+    }
     use() {
         this.gl.useProgram(this.program)
     }
