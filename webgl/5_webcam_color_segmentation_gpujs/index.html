@@ -1,0 +1,84 @@
+<html>
+    <head>
+        <title>
+            Basic example of WebGL
+        </title>
+        <style>
+            :root {
+                font-size: larger;
+            }
+            select[type=checkbox] {
+                width: 20em;
+                height: 3em;
+                font-size: larger;
+            }
+            .modalCloseBtn {
+                width: 32px;
+                height: 32px;
+                background-color: white;
+                position: absolute;
+                float: right;
+                top:10px;
+                right:10px;
+                align-content: center;
+                color:black;
+                border: 1px solid black;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                cursor: pointer;
+            }
+            .modal {
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                bottom: 20px;
+                right: 20px;
+                align-content: center;
+                transition: all 200ms ease-in-out;
+                padding: 10px;
+                margin: 10px;
+                background-color: lightgray;
+                overflow: hidden;
+            }
+            .modal > .title {
+                margin-block-start: 0px;
+                margin-block-end: 0px;
+                display: flex;
+                justify-content: center;
+            }
+            .modalContent {
+                top: 55px;
+                left: 0px;
+                right: 0px;
+                bottom: 0px;
+                position: absolute;
+                background-color: white;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+            .modalContainer {
+                position:absolute;
+                top: 0px;
+                left: 0px;
+                right: 0px;
+                bottom: 0px;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                transition: all 200ms ease-in-out;
+            }
+        </style>
+    </head>
+    <body>
+        <script src="program.js"></script>
+        <script src="shader.js"></script>
+        <script src="texShader.js"></script>
+        <script src="colorPrecisionShader.js"></script>
+        <script src="maggicSegmentationShader.js"></script>
+        <script src="index.js"></script>
+    </body>
+</html>
